@@ -28,7 +28,7 @@ const handleLogin = async () => {
         const data = await response.json();
         console.log("Login Success:", data);
         localStorage.setItem("token", data.token);
-
+        localStorage.setItem("user", JSON.stringify(data.user)); // simpan data user
         // Navigate to HomePage after successful login
         navigate("/home");
     } catch (err) {
