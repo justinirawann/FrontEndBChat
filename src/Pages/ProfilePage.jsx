@@ -81,7 +81,7 @@ export default function ProfilePage() {
                 <div key={index} className="relative w-full h-40">
                   <div className="w-full h-full border border-dashed border-gray-400 rounded-md" />
                   <button
-                    className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center shadow-md"
+                    className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center shadow-md"
                     aria-label="Add Photo"
                   >
                     <AiOutlinePlus className="text-white text-[12px]" />
@@ -99,7 +99,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="flex justify-center mt-10">
-          <button className="bg-gradient-to-r from-pink-500 to-yellow-400 text-white px-8 py-3 rounded-full font-semibold shadow-md hover:opacity-90 transition whitespace-nowrap">
+          <button className="bg-gradient-to-r from-pink-400 to-yellow-400 text-white px-8 py-3 rounded-full font-semibold shadow-md hover:opacity-90 transition whitespace-nowrap">
             Save Changes
           </button>
 
