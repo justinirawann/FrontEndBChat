@@ -11,17 +11,34 @@ const dummyData = [
   { name: "Dr. Issac Aufderhar Jr.", message: "Et sit eum aut aut ut dolorem blan..." },
 ];
 
-export default function SidebarChatLayout() {
+export default function UserLayout() {
   const [activeTab, setActiveTab] = useState("matches");
   const [user, setUser] = useState(null); // Declare state for the user
+  const [profile, setProfile] = useState({
+    name: "",
+    email: "",
+    birthdate: "",
+    gender: "",
+    status: "",
+    description: "",
+    photos: [],
+  });
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+    const storedProfile = localStorage.getItem("profile"); // Ambil profile dari localStorage
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (err) {
         console.error("Error parsing user from localStorage", err);
+      }
+    }
+    if (storedProfile) {
+      try {
+        setProfile(JSON.parse(storedProfile)); // Ambil profile yang telah disimpan
+      } catch (err) {
+        console.error("Error parsing profile from localStorage", err);
       }
     }
   }, []);
@@ -39,7 +56,7 @@ export default function SidebarChatLayout() {
           {/* Profile Image (Left) */}
           <Link to="/profile">
             <img
-              src="/LoginPage.jpg" // Replace later with dynamic URL
+              src={profile.photos[0] || "/default-avatar.png"} // Gunakan foto pertama atau gambar default
               alt="Profile"
               className="w-12 h-12 bg-gray-300 rounded-full hover:ring-2 hover:ring-white transition"
             />
