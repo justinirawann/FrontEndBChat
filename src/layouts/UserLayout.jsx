@@ -26,22 +26,59 @@ export default function UserLayout() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const storedProfile = localStorage.getItem("profile"); // Ambil profile dari localStorage
+    let parsedUser = null;
+
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        parsedUser = JSON.parse(storedUser);
+
+        // Kalau photos masih string, parse jadi array
+        if (typeof parsedUser.photos === "string") {
+          parsedUser.photos = JSON.parse(parsedUser.photos);
+        }
       } catch (err) {
-        console.error("Error parsing user from localStorage", err);
+        console.error("Error parsing user from localStorage:", err);
       }
+      console.log("User photos:", profile.photos);
+
     }
-    if (storedProfile) {
-      try {
-        setProfile(JSON.parse(storedProfile)); // Ambil profile yang telah disimpan
-      } catch (err) {
-        console.error("Error parsing profile from localStorage", err);
-      }
+
+    if (parsedUser) {
+      setUser(parsedUser);
+      setProfile({
+        name: parsedUser.name || "",
+        email: parsedUser.email || "",
+        birthdate: parsedUser.birthdate || "",
+        gender: parsedUser.gender || "",
+        status: parsedUser.status || "",
+        description: parsedUser.description || "",
+        photos: parsedUser.photos || [],
+      });
     }
   }, []);
+  function getPhotoUrl(photoPath) {
+    if (!photoPath) return "/default-avatar.png";
+    return `http://127.0.0.1:8000/storage/${photoPath}`;
+  }
+
+
+
+  //   const storedProfile = localStorage.getItem("profile"); // Ambil profile dari localStorage
+  //   if (storedUser) {
+  //     try {
+  //       setUser(JSON.parse(storedUser));
+  //     } catch (err) {
+  //       console.error("Error parsing user from localStorage", err);
+  //     }
+  //   }
+  //   if (storedProfile) {
+  //     try {
+  //       setProfile(JSON.parse(storedProfile)); // Ambil profile yang telah disimpan
+  //     } catch (err) {
+  //       console.error("Error parsing profile from localStorage", err);
+  //     }
+  //   }
+  // }, []);
 
   if (!user) {
     return <div>Loading...</div>; // Render a loading state while user data is being fetched
@@ -56,7 +93,7 @@ export default function UserLayout() {
           {/* Profile Image (Left) */}
           <Link to="/profile">
             <img
-              src={profile.photos[0] || "/default-avatar.png"} // Gunakan foto pertama atau gambar default
+              src={profile.photos.length > 0 ? getPhotoUrl(profile.photos[0]) : "/default-avatar.png"}
               alt="Profile"
               className="w-12 h-12 bg-gray-300 rounded-full hover:ring-2 hover:ring-white transition"
             />

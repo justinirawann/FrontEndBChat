@@ -29,6 +29,8 @@ const handleLogin = async () => {
         console.log("Login Success:", data);
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user)); // simpan data user
+        localStorage.setItem("major", JSON.stringify(data.major)); // simpan data user
+        localStorage.setItem("faculty", JSON.stringify(data.faculty)); // simpan data user
         // Navigate to HomePage after successful login
         navigate("/home");
     } catch (err) {
