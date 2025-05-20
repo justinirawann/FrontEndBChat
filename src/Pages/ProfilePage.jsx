@@ -118,29 +118,13 @@ const handlePhotoChange = async (e, index) => {
       return { ...prev, photos: newPhotos };
     });
   };
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setProfile((prev) => ({
-  //     ...prev,
-  //     [name]: value,
-  //   }));
-  // };
-function handleChange(e) {
-  const { name, value } = e.target;
-
-  if (name === "faculty") {
-    setProfile((prev) => ({
-      ...prev,
-      faculty_id: value,
-      major_id: "",  // reset major id di sini
-    }));
-  } else {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
     setProfile((prev) => ({
       ...prev,
       [name]: value,
     }));
-  }
-}
+  };
 
 const handleSave = async () => {
   try {
@@ -274,37 +258,40 @@ const handleSave = async () => {
               </select>
 
             <label className="block mb-2 font-medium">Faculty</label>
-            <select
-              name="faculty"
-              value={profile.faculty_id || ""}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-3 mb-4"
-            >
-              <option value="">Choose Faculty</option>
-              {faculties.map((faculty) => (
-                <option key={faculty.id} value={faculty.id}>
-                  {faculty.name}
-                </option>
-              ))}
-            </select>
-
-            <label className="block mb-2 font-medium">Major</label>
-            <select
-              name="major_id"
-              value={profile.major_id || ""}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              disabled={!profile.faculty_id}
-            >
-              <option value="">Choose Major</option>
-              {majors
-                .filter((major) => major.faculty_id === Number(profile.faculty_id))
-                .map((major) => (
-                  <option key={major.id} value={major.id}>
-                    {major.name}
+              <select
+                name="faculty"
+                value={profile.faculty_id || ""}
+                onChange={(e) => {
+                  handleChange(e);
+                  setProfile((prev) => ({ ...prev, major_id: "" }));
+                }}
+                className="w-full border border-gray-300 rounded-md p-3 mb-4"
+              >
+                <option value="">Choose Faculty</option>
+                {faculties.map((faculty) => (
+                  <option key={faculty.id} value={faculty.id}>
+                    {faculty.name}
                   </option>
                 ))}
-            </select>
+              </select>
+
+              <label className="block mb-2 font-medium">Major</label>
+              <select
+                name="major"
+                value={profile.major_id || ""}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md p-3 mb-4"
+                disabled={!profile.faculty_id}
+              >
+                <option value="">Choose Major</option>
+                {majors
+                  .filter((major) => major.faculty_id === parseInt(profile.faculty_id || "-1", 10))
+                  .map((major) => (
+                    <option key={major.id} value={major.id}>
+                      {major.name}
+                    </option>
+                  ))}
+              </select>
             </div>
              <div className="flex flex-col items-center">
             <label className="block mb-2 font-medium">Profile photos</label>
