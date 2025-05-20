@@ -221,36 +221,44 @@ const handleSave = async () => {
                 className="w-full border border-gray-300 rounded-md p-3 mb-4"
               />
               <label className="block mb-2 font-medium">Gender</label>
-              <div className="flex gap-2 mb-4">
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-full border ${profile.gender === 'male' ? 'bg-blue-500 text-white' : 'bg-white border-gray-300'}`}
-                  onClick={() => handleChange({ target: { name: 'gender', value: 'male' } })}
-                >
-                  Male
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 rounded-full border ${profile.gender === 'female' ? 'bg-blue-500 text-white' : 'bg-white border-gray-300'}`}
-                  onClick={() => handleChange({ target: { name: 'gender', value: 'female' } })}
-                >
-                  Female
-                </button>
-              </div>
-
-              <label className="block mb-2 font-medium">Status</label>
-              <div className="flex gap-2 mb-4">
-                {['Single', 'Taken', 'Complicated'].map((status) => (
+              <div className="flex space-x-2 mb-4">
+                {["male", "female"].map((g) => (
                   <button
-                    key={status}
+                    key={g}
                     type="button"
-                    className={`px-4 py-2 rounded-full border ${profile.status === status.toLowerCase() ? 'bg-green-500 text-white' : 'bg-white border-gray-300'}`}
-                    onClick={() => handleChange({ target: { name: 'status', value: status.toLowerCase() } })}
+                    onClick={() => setProfile({ ...profile, gender: g })}
+                    className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
+                      profile.gender === g
+                        ? g === "male"
+                          ? "bg-blue-300 text-white font-semibold"
+                          : "bg-pink-300 text-white font-semibold"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
-                    {status}
+                    {g}
                   </button>
                 ))}
               </div>
+
+
+              <label className="block mb-2 font-medium">Status</label>
+                <div className="flex space-x-2 mb-4">
+                  {["single", "taken", "complicated"].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setProfile({ ...profile, status: s })}
+                      className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
+                        profile.status === s
+                          ? "bg-yellow-300 text-white font-semibold"
+                          : "bg-white text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
 
               <label className="block mb-2 font-medium">Description</label>
               <textarea
