@@ -7,103 +7,99 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-
-const handleLogin = async () => {
+  const handleLogin = async () => {
     try {
-        const response = await fetch("http://localhost:8000/api/login", {
+      const response = await fetch("http://localhost:8000/api/login", {
         method: "POST",
         headers: {
-            "Content-Type": "application/json",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-            email,
-            password,
+          email,
+          password,
         }),
-        });
+      });
 
-        if (!response.ok) {
+      if (!response.ok) {
         throw new Error("Login failed");
-        }
+      }
 
-        const data = await response.json();
-        console.log("Login Success:", data);
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user)); // simpan data user
-        localStorage.setItem("major", JSON.stringify(data.major)); // simpan data user
-        localStorage.setItem("faculty", JSON.stringify(data.faculty)); // simpan data user
-        // Navigate to HomePage after successful login
-        navigate("/home");
+      const data = await response.json();
+      console.log("Login Success:", data);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("major", JSON.stringify(data.major));
+      localStorage.setItem("faculty", JSON.stringify(data.faculty));
+      navigate("/home");
     } catch (err) {
-        console.error(err);
-        setError(err.message || "Login failed");
+      console.error(err);
+      setError(err.message || "Login failed");
     }
-    };
-
+  };
 
   return (
-    <div className="flex h-screen">
-      {/* Left Side - Form */}
-      <div className="w-1/2 bg-white flex flex-col justify-center p-12">
-        <h1 className="text-2xl font-semibold mb-4">Welcome back</h1>
-        <p className="mb-8 text-gray-600">Welcome back! Please enter your details.</p>
+    <div className="flex min-h-screen bg-yellow-100 items-center justify-center">
+      <div className="flex w-[90%] max-w-5xl rounded-3xl overflow-hidden shadow-2xl bg-white">
+        {/* Left Side - Form */}
+        <div className="w-1/2 p-12 flex flex-col justify-center">
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">Welcome back<span className="ml-1">👋</span></h1>
+          <p className="mb-8 text-sm text-gray-600">Please enter your details.</p>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
 
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Email</label>
-          <input
-            type="email"
-            className="w-full p-2 border rounded"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Password</label>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
-        <div className="flex justify-between mb-4">
-          <div>
-            <input type="checkbox" className="mr-2" />
-            <span>Remember for 30 days</span>
+          <div className="mb-4">
+            <input
+              type="email"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
-          <a href="#" className="text-sm text-blue-500">Forgot password?</a>
+
+          <div className="mb-4">
+            <input
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <div className="flex justify-between items-center text-sm mb-6">
+            <label className="flex items-center">
+              <input type="checkbox" className="mr-2" />
+              Remember for 30 days
+            </label>
+            <a href="#" className="text-yellow-500">Forgot password?</a>
+          </div>
+
+          <button
+            className="w-full bg-yellow-500 text-white py-3 rounded-lg text-sm font-semibold hover:bg-yellow-600"
+            onClick={handleLogin}
+          >
+            Log In
+          </button>
+
+          <p className="text-sm text-center mt-6">
+            Don’t have an account?{" "}
+            <button
+              onClick={() => navigate("/register")}
+              className="text-yellow-500 font-semibold hover:underline"
+            >
+              Sign Up
+            </button>
+          </p>
         </div>
 
-        <button
-          className="w-full bg-blue-600 text-white py-2 rounded mb-4 hover:bg-blue-700"
-          onClick={handleLogin}
-        >
-          Sign in
-        </button>
-
-        <p className="text-sm text-center">
-          Don’t have an account? <a href="#" className="text-blue-500">Sign up for free</a>
-        </p>
-      </div>
-
-      {/* Right Side - Image and Quote */}
-      <div className="w-1/2 bg-gray-100 relative">
-        <img
-          src="/LoginPage.jpg"
-          alt="Login Illustration"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute bottom-10 left-10 bg-white bg-opacity-70 p-4 rounded-lg backdrop-blur">
-          <p className="text-lg font-semibold mb-2">
-            “We’ve been using Untitled to kick start every new project and can’t imagine working without it.”
-          </p>
-          <p className="text-sm font-bold">Andi Lane</p>
-          <p className="text-xs">Founder, Catalog - Web Design Agency</p>
+        {/* Right Side - Image */}
+        <div className="w-1/2">
+          <img
+            src="/Loginpage2.jpg"
+            alt="Login Visual"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
     </div>

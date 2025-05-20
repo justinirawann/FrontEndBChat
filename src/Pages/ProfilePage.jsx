@@ -1,35 +1,35 @@
 import { AiOutlinePlus } from "react-icons/ai";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-
+import { useNavigate } from "react-router-dom"; // ganti sesuai routing kamu
 
 export default function ProfilePage() {
-const [profile, setProfile] = useState(() => {
-  const storedUser = localStorage.getItem("user");
-  const storedMajor = localStorage.getItem("major");
-  const storedFaculty = localStorage.getItem("faculty");
-  let userData = {};
+  const navigate = useNavigate();
 
-  if (storedUser) {
-    try {
-      userData = JSON.parse(storedUser);
-      userData.photos = Array.isArray(userData.photos)
-        ? userData.photos
-        : JSON.parse(userData.photos || "[]");
-    } catch {
-      console.warn("Failed to parse storedUser");
+  const [profile, setProfile] = useState(() => {
+    const storedUser = localStorage.getItem("user");
+    const storedMajor = localStorage.getItem("major");
+    const storedFaculty = localStorage.getItem("faculty");
+    let userData = {};
+
+    if (storedUser) {
+      try {
+        userData = JSON.parse(storedUser);
+        userData.photos = Array.isArray(userData.photos)
+          ? userData.photos
+          : JSON.parse(userData.photos || "[]");
+      } catch {
+        console.warn("Failed to parse storedUser");
+      }
     }
-  }
 
-  return {
-    ...userData,
-    photos: userData.photos || [],
-    major: storedMajor ? JSON.parse(storedMajor) : userData.major || "",
-    faculty: storedFaculty ? JSON.parse(storedFaculty) : userData.faculty || "",
-  };
-});
-
-
+    return {
+      ...userData,
+      photos: userData.photos || [],
+      major: storedMajor ? JSON.parse(storedMajor) : userData.major || "",
+      faculty: storedFaculty ? JSON.parse(storedFaculty) : userData.faculty || "",
+    };
+  });
 
   const [faculties, setFaculties] = useState([]);
   const [majors, setMajors] = useState([]);
@@ -48,9 +48,6 @@ const [profile, setProfile] = useState(() => {
     } else {
       Swal.close();
     }
-        // Ambil major & faculty dari localStorage juga
-    const storedMajor = localStorage.getItem("major");
-    const storedFaculty = localStorage.getItem("faculty");
     const fetchFacultiesAndMajors = async () => {
       try {
         const facultyRes = await fetch("http://127.0.0.1:8000/api/getfaculty");
@@ -68,10 +65,10 @@ const [profile, setProfile] = useState(() => {
         setLoading(false);
       }
     };
-    console.log(profile);
 
     fetchFacultiesAndMajors();
   }, [loading]);
+
   const uploadPhoto = async (file) => {
     const formData = new FormData();
     formData.append("photo", file);
@@ -95,22 +92,20 @@ const [profile, setProfile] = useState(() => {
     }
   };
 
-  // Handle file input change, upload & simpan path ke profile.photos
-const handlePhotoChange = async (e, index) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const handlePhotoChange = async (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const uploadedPath = await uploadPhoto(file);
-  if (!uploadedPath) return;
+    const uploadedPath = await uploadPhoto(file);
+    if (!uploadedPath) return;
 
-  setProfile((prev) => {
-    const newPhotos = [...prev.photos];
-    newPhotos[index] = uploadedPath;
-    return { ...prev, photos: newPhotos };
-  });
-};
+    setProfile((prev) => {
+      const newPhotos = [...prev.photos];
+      newPhotos[index] = uploadedPath;
+      return { ...prev, photos: newPhotos };
+    });
+  };
 
-  // Hapus foto di index tertentu
   const handleRemovePhoto = (index) => {
     setProfile((prev) => {
       const newPhotos = [...prev.photos];
@@ -118,168 +113,180 @@ const handlePhotoChange = async (e, index) => {
       return { ...prev, photos: newPhotos };
     });
   };
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setProfile((prev) => ({
-  //     ...prev,
-  //     [name]: value,
-  //   }));
-  // };
-function handleChange(e) {
-  const { name, value } = e.target;
 
-  if (name === "faculty") {
-    setProfile((prev) => ({
-      ...prev,
-      faculty_id: value,
-      major_id: "",  // reset major id di sini
-    }));
-  } else {
-    setProfile((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  }
-}
+  function handleChange(e) {
+    const { name, value } = e.target;
 
-const handleSave = async () => {
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/profile/update", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id: profile.id,
-        name: profile.name,
-        birthdate: profile.birthdate,
-        gender: profile.gender,
-        status: profile.status,
-        faculty_id: profile.faculty_id ? parseInt(profile.faculty_id, 10) : null,
-        major_id: profile.major_id ? parseInt(profile.major_id, 10) : null,
-        campus: profile.campus,
-        description: profile.description,
-        photos: profile.photos,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-    Swal.fire({
-      icon: "success",
-      title: "Profile Updated!",
-      text: "Kamu Dah siap cari pacar",
-      confirmButtonText: "Ok",
-      showConfirmButton: true
-    });
-      setProfile(data.user);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("major", JSON.stringify(data.user.major || ""));
-      localStorage.setItem("faculty", JSON.stringify(data.user.faculty || ""));
+    if (name === "faculty") {
+      setProfile((prev) => ({
+        ...prev,
+        faculty_id: value,
+        major_id: "", // reset major id di sini
+      }));
     } else {
-      alert(data.errors?.[0] || "Failed to update profile");
+      setProfile((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
     }
-  } catch (err) {
-    console.error("Update error", err);
-    alert("Failed to update profile");
   }
-};
 
+  const handleSave = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/profile/update", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: profile.id,
+          name: profile.name,
+          birthdate: profile.birthdate,
+          gender: profile.gender,
+          status: profile.status,
+          faculty_id: profile.faculty_id ? parseInt(profile.faculty_id, 10) : null,
+          major_id: profile.major_id ? parseInt(profile.major_id, 10) : null,
+          campus: profile.campus,
+          description: profile.description,
+          photos: profile.photos,
+        }),
+      });
 
+      const data = await res.json();
+
+      if (res.ok) {
+        Swal.fire({
+          icon: "success",
+          title: "Profile Updated!",
+          text: "Saving changes...",
+          confirmButtonText: "Ok",
+          showConfirmButton: true
+        });
+        setProfile(data.user);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("major", JSON.stringify(data.user.major || ""));
+        localStorage.setItem("faculty", JSON.stringify(data.user.faculty || ""));
+      } else {
+        alert(data.errors?.[0] || "Failed to update profile");
+      }
+    } catch (err) {
+      console.error("Update error", err);
+      alert("Failed to update profile");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#e6efff] flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={() => navigate("/home")}
+          className="mb-6 text-gray-700 font-semibold relative cursor-pointer 
+            before:absolute before:bottom-0 before:left-0 before:w-0 before:h-[2px] 
+            before:bg-gray-700 before:transition-all before:duration-300 
+            hover:before:w-full hover:text-gray-900 hover:translate-y-[-2px] 
+            transition-all duration-300"
+          style={{ outline: "none" }}
+        >
+          ← Back to Home
+        </button>
+
         <h2 className="text-2xl font-semibold text-center mb-6">Edit Profile</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block mb-2 font-medium">Name</label>
-              <input
-                type="text"
-                name="name"
-                value={profile.name || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block mb-2 font-medium">Name</label>
+            <input
+              type="text"
+              name="name"
+              value={profile.name || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            />
 
-              <label className="block mb-2 font-medium">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={profile.email || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              />
+            <label className="block mb-2 font-medium">Email</label>
+            <input
+              type="email"
+              name="email"
+              value={profile.email || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            />
 
-              <label className="block mb-2 font-medium">Birthdate</label>
-              <input
-                type="date"
-                name="birthdate"
-                value={profile.birthdate ? profile.birthdate.split("T")[0] : ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              />
-              <label className="block mb-2 font-medium">Gender</label>
-              <div className="flex space-x-2 mb-4">
-                {["male", "female"].map((g) => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => setProfile({ ...profile, gender: g })}
-                    className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
-                      profile.gender === g
-                        ? g === "male"
-                          ? "bg-blue-300 text-white font-semibold"
-                          : "bg-pink-300 text-white font-semibold"
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
+            <label className="block mb-2 font-medium">Birthdate</label>
+            <input
+              type="date"
+              name="birthdate"
+              value={profile.birthdate ? profile.birthdate.split("T")[0] : ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            />
+            <label className="block mb-2 font-medium">Gender</label>
+            <div className="flex space-x-2 mb-4">
+              {["male", "female"].map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setProfile({ ...profile, gender: g })}
+                  className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
+                    profile.gender === g
+                      ? g === "male"
+                        ? "bg-blue-300 text-white font-semibold"
+                        : "bg-pink-300 text-white font-semibold"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
 
+            <label className="block mb-2 font-medium">Status</label>
+            <div className="flex space-x-2 mb-4">
+              {["single", "taken", "complicated"].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setProfile({ ...profile, status: s })}
+                  className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
+                    profile.status === s
+                      ? "bg-yellow-300 text-white font-semibold"
+                      : "bg-white text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
 
-              <label className="block mb-2 font-medium">Status</label>
-                <div className="flex space-x-2 mb-4">
-                  {["single", "taken", "complicated"].map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setProfile({ ...profile, status: s })}
-                      className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
-                        profile.status === s
-                          ? "bg-yellow-300 text-white font-semibold"
-                          : "bg-white text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+            <label className="block mb-2 font-medium">Description</label>
+            <textarea
+              name="description"
+              value={profile.description || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            />
 
-
-              <label className="block mb-2 font-medium">Description</label>
-              <textarea
-                name="description"
-                value={profile.description || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              />
-
-              <label className="block mb-2 font-medium">Campus</label>
-              <select
-                name="campus"
-                value={profile.campus || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              >
-                <option value="">Choose Campus</option>
-                {['BINUS @Kemanggisan', 'BINUS @Alam Sutera', 'BINUS @Senayan', 'BINUS @Bekasi', 'BINUS @Bandung', 'BINUS @Malang', 'BINUS @Semarang'].map((campus) => (
-                  <option key={campus} value={campus}>{campus}</option>
-                ))}
-              </select>
+            <label className="block mb-2 font-medium">Campus</label>
+            <select
+              name="campus"
+              value={profile.campus || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            >
+              <option value="">Choose Campus</option>
+              {[
+                "BINUS @Kemanggisan",
+                "BINUS @Alam Sutera",
+                "BINUS @Senayan",
+                "BINUS @Bekasi",
+                "BINUS @Bandung",
+                "BINUS @Malang",
+                "BINUS @Semarang",
+              ].map((campus) => (
+                <option key={campus} value={campus}>
+                  {campus}
+                </option>
+              ))}
+            </select>
 
             <label className="block mb-2 font-medium">Faculty</label>
             <select
@@ -313,12 +320,15 @@ const handleSave = async () => {
                   </option>
                 ))}
             </select>
-            </div>
-             <div className="flex flex-col items-center">
+          </div>
+          <div className="flex flex-col items-center">
             <label className="block mb-2 font-medium">Profile photos</label>
             <div className="grid grid-cols-3 gap-4 mb-4">
               {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="relative w-full h-40 border border-dashed border-gray-400 rounded-md flex items-center justify-center group">
+                <div
+                  key={index}
+                  className="relative w-full h-40 border border-dashed border-gray-400 rounded-md flex items-center justify-center group"
+                >
                   {profile.photos && profile.photos[index] ? (
                     <>
                       <img

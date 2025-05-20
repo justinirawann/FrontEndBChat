@@ -108,7 +108,7 @@ export default function UserLayout() {
           <button
             onClick={() => {
               localStorage.clear();
-              window.location.href = "/login";
+              window.location.href = "/";
             }}
             className="ml-auto text-sm bg-white text-black px-3 py-1 rounded-full hover:bg-yellow-100 transition"
           >
@@ -122,13 +122,13 @@ export default function UserLayout() {
             className={`flex-1 text-sm font-medium py-2 px-4 ${activeTab === "matches" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500"}`}
             onClick={() => setActiveTab("matches")}
           >
-            Matches <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">12</span>
+            Matches <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">7</span>
           </button>
           <button
             className={`flex-1 text-sm font-medium py-2 px-4 ${activeTab === "messages" ? "border-b-2 border-yellow-500 text-yellow-600" : "text-gray-500"}`}
             onClick={() => setActiveTab("messages")}
           >
-            Messages <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">3</span>
+            Messages <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">7</span>
           </button>
         </div>
 
