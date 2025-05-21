@@ -10,31 +10,24 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setPreferredGender(userData.preferred_gender || "");
-      setPreferredCampus(userData.preferred_campus || "");
-    } else {
-      console.error("Tidak ada user di localStorage");
-    }
-    if (loading) {
-    Swal.fire({
-      title: "Loading matches...",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-  } else {
-    Swal.close();
-  }
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser) setUser(storedUser);
+  }, []);
+
+  useEffect(() => {
     async function fetchMatches() {
       const user = JSON.parse(localStorage.getItem("user"));
       if (!user || !user.id) return;
 
       try {
+        Swal.fire({
+          title: "Loading matches...",
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          },
+        });
+
         const res = await fetch("http://127.0.0.1:8000/api/show-matches", {
           method: "POST",
           headers: {
@@ -51,11 +44,58 @@ export default function HomePage() {
         console.error(err);
       } finally {
         setLoading(false);
+        Swal.close();
       }
     }
 
-    fetchMatches();
+    if (loading) {
+      fetchMatches();
+    }
   }, [loading]);
+
+
+  useEffect(() => {
+  if (!user || !user.id) return;
+
+  async function fetchNewMatchesAndNotify() {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/get-new-matches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch new matches");
+
+      const newMatches = await res.json();
+
+      if (newMatches.length > 0) {
+        for (const match of newMatches) {
+          await Swal.fire({
+            title: "It's a match!",
+            text: `You matched with ${match.name}`,
+            imageUrl: match.photos ? `http://127.0.0.1:8000/storage/${JSON.parse(match.photos)[0]}` : undefined,
+            imageWidth: 300,
+            imageHeight: 300,
+            confirmButtonText: "Nice!",
+          });
+        }
+
+        const matchIds = newMatches.map((m) => m.match_id);
+        await fetch("http://127.0.0.1:8000/api/mark-matches-notified", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ match_ids: matchIds }),
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching new matches notifications:", err);
+    }
+  }
+
+  fetchNewMatchesAndNotify();
+}, [user]);
+
 
   const handleSavePreferences = async () => {
     if (!user) return;
@@ -98,9 +138,7 @@ export default function HomePage() {
     }
   };
 
-  if (!user) {
-    return <p>Loading...</p>;
-  }
+  
 
   return (
     <div
@@ -177,9 +215,9 @@ export default function HomePage() {
         {/* List Matches */}
         <div className="flex flex-wrap justify-center gap-6 mt-20">
           {!loading && matches && !Array.isArray(matches) ? (
-            <MatchCard user={matches} />
+            <MatchCard user={matches} setLoading={setLoading} />
           ) : (
-            matches.map((matchUser) => <MatchCard key={matchUser.id} user={matchUser} />)
+            matches.map((matchUser) => <MatchCard key={matchUser.id} user={matchUser} setLoading={setLoading} />)
           )}
         </div>
       </div>
@@ -187,8 +225,47 @@ export default function HomePage() {
   );
 }
 
-function MatchCard({ user }) {
+function MatchCard({ user, setLoading }) {
   const photosArray = user.photos ? JSON.parse(user.photos) : [];
+  const currentUser = JSON.parse(localStorage.getItem("user"));
+
+  const handleLike = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          liked_user_id: user.id,
+        }),
+      });
+      const data = await res.json();
+      Swal.fire("❤️", data.message, "success");
+      setLoading(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to like user", "error");
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/dislike", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: currentUser.id,
+          disliked_user_id: user.id,
+        }),
+      });
+      const data = await res.json();
+      Swal.fire("❌", data.message, "info");
+      setLoading(true);
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", "Failed to skip user", "error");
+    }
+  };
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 text-center w-80">
       <img
@@ -205,11 +282,15 @@ function MatchCard({ user }) {
       </h2>
       <p className="text-sm text-gray-500 mb-4">18 kilometers away</p>
       <div className="flex justify-around mt-4">
-        <button className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-red-100">
+        <button 
+        onClick={handleDislike}
+        className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-red-100">
           ❌
         </button>
 
-        <button className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-blue-100">
+        <button 
+        onClick={handleLike}
+        className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-blue-100">
           ❤️
         </button>
       </div>
