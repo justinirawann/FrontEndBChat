@@ -21,7 +21,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-           "Accept": "application/json",
+          "Accept": "application/json",
         },
         body: JSON.stringify({
           name,
@@ -42,7 +42,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // Success: Tampilkan swal dan redirect
       Swal.fire({
         icon: "success",
         title: "Registration Successful",
@@ -53,11 +52,9 @@ export default function RegisterPage() {
 
       localStorage.setItem("token", data.token);
 
-      // Delay sebentar supaya swal sempat muncul sebelum redirect
       setTimeout(() => {
         navigate("/");
       }, 2000);
-
     } catch (err) {
       console.error(err);
       setError(err.message || "Registration failed");
@@ -65,88 +62,80 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Left Side - Form */}
-      <div className="w-1/2 bg-white flex flex-col justify-center p-12">
-        <h1 className="text-2xl font-semibold mb-4">Create an account</h1>
-        <p className="mb-8 text-gray-600">Start your journey with us today.</p>
+    <div className="flex min-h-screen bg-yellow-100 items-center justify-center">
+      <div className="flex w-[90%] max-w-5xl rounded-3xl overflow-hidden shadow-2xl bg-white">
+        {/* Left Side - Form */}
+        <div className="w-1/2 p-12 flex flex-col justify-center">
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">Create an account ✨</h1>
+          <p className="mb-8 text-sm text-gray-600">Start your journey with us today.</p>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
 
-        {/* Name */}
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Name</label>
-          <input
-            type="text"
-            className="w-full p-2 border rounded"
-            placeholder="Enter your name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
+          <div className="mb-4">
+            <input
+              type="text"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
 
-        {/* Email */}
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Email</label>
-          <input
-            type="email"
-            className="w-full p-2 border rounded"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
+          <div className="mb-4">
+            <input
+              type="email"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
 
-        {/* Password */}
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Password</label>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            placeholder="Create a password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+          <div className="mb-4">
+            <input
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-        {/* Confirm Password */}
-        <div className="mb-4">
-          <label className="block mb-1 text-sm text-gray-700">Confirm Password</label>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            placeholder="Confirm your password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
+          <div className="mb-4">
+            <input
+              type="password"
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm"
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
 
-        {/* Submit Button */}
-        <button
-          className="w-full bg-blue-600 text-white py-2 rounded mb-4 hover:bg-blue-700"
-          onClick={handleRegister}
-        >
-          Sign up
-        </button>
+          <button
+            className="w-full bg-yellow-500 text-white py-3 rounded-lg text-sm font-semibold hover:bg-yellow-600"
+            onClick={handleRegister}
+          >
+            Sign Up
+          </button>
 
-        <p className="text-sm text-center">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-500">Sign in</a>
-        </p>
-      </div>
-
-      {/* Right Side - Image and Quote */}
-      <div className="w-1/2 bg-gray-100 relative">
-        <img
-          src="/LoginPage.jpg"
-          alt="Register Illustration"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute bottom-10 left-10 bg-white bg-opacity-70 p-4 rounded-lg backdrop-blur">
-          <p className="text-lg font-semibold mb-2">
-            “The beginning is the most important part of the work.” – Plato
+          <p className="text-sm text-center mt-6">
+            Already have an account?{" "}
+            <button
+              onClick={() => navigate("/login")}
+              className="text-yellow-500 font-semibold hover:underline"
+            >
+              Sign In
+            </button>
           </p>
-          <p className="text-sm font-bold">Your Journey Starts Here</p>
+        </div>
+
+        {/* Right Side - Image */}
+        <div className="w-1/2">
+          <img
+            src="/Loginpage2.jpg"
+            alt="Register Visual"
+            className="w-full h-full object-cover"
+          />
         </div>
       </div>
     </div>
