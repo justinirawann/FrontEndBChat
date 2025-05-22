@@ -9,9 +9,12 @@ export default function LoginPage() {
 
 
   const isProfileComplete = (user) => {
-  // Contoh cek sederhana, sesuaikan dengan kondisi asli profil lengkapmu
-  return user.birthday && user.photos && JSON.parse(user.photos).length > 0;
+    const photos = Array.isArray(user.photos) ? user.photos : [];
+
+    return !!user.birthday && photos.length > 0;
   };
+
+
   const handleLogin = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/login", {
@@ -30,6 +33,12 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
+
+      // ✅ DEBUG: cek isi data user
+      console.log("Birthday:", data.user.birthday);
+      console.log("Photos:", data.user.photos);
+      console.log("isProfileComplete:", isProfileComplete(data.user));
+
       console.log("Login Success:", data);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
