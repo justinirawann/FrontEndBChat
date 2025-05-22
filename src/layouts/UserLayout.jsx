@@ -13,6 +13,8 @@ export default function UserLayout() {
     description: "",
     photos: [],
   });
+
+  
   const [matches, setMatches] = useState([]);
   const navigate = useNavigate();
 
@@ -62,6 +64,8 @@ export default function UserLayout() {
         .catch((error) => console.error("Failed to fetch matches:", error));
     }
   }, []);
+
+
 
   function getPhotoUrl(photoPath) {
     if (!photoPath) return "/default-avatar.png";

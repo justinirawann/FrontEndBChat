@@ -8,6 +8,8 @@ export default function HomePage() {
   const [preferredCampus, setPreferredCampus] = useState("");
   const [showPreferences, setShowPreferences] = useState(false);
   const [matches, setMatches] = useState([]);
+  const [showInfo, setShowInfo] = useState(false);
+
 
   // Load user from localStorage
   useEffect(() => {
@@ -142,7 +144,7 @@ export default function HomePage() {
     <div
       className="relative min-h-screen p-6"
       style={{
-        backgroundImage: 'url("/homepage.png")',
+        // backgroundImage: 'url("/homepage.png")',
         backgroundSize: "cover",
         backgroundRepeat: "repeat",
         backgroundPosition: "center",
@@ -232,10 +234,21 @@ function calculateAge(birthday) {
 
   return age;
   }
+
+  function InfoRow({ label, value }) {
+    return (
+      <div className="flex items-start gap-2">
+        <span className="font-semibold w-28">{label}:</span>
+        <span>{value}</span>
+      </div>
+    );
+  }
+
 function MatchCard({ user, onActionDone }) {
   const photosArray = user.photos ? JSON.parse(user.photos) : [];
   const currentUser = JSON.parse(localStorage.getItem("user"));
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [showInfo, setShowInfo] = useState(false);
 
   const handleLike = async () => {
     try {
@@ -276,47 +289,42 @@ function MatchCard({ user, onActionDone }) {
   };
 
   const prevPhoto = () => {
-    if (photoIndex > 0) {
-      setPhotoIndex(photoIndex - 1);
-    }
+    if (photoIndex > 0) setPhotoIndex(photoIndex - 1);
   };
 
   const nextPhoto = () => {
-    if (photoIndex < photosArray.length - 1) {
-      setPhotoIndex(photoIndex + 1);
-    }
+    if (photoIndex < photosArray.length - 1) setPhotoIndex(photoIndex + 1);
   };
-
+  console.log(user); 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 text-center w-80 relative">
-      <div className="relative w-full h-96 mb-4 rounded-2xl overflow-hidden select-none">
-        {photosArray.length > 0 ? (
-          <>
-            <img
-              src={`http://127.0.0.1:8000/storage/${photosArray[photoIndex]}`}
-              alt={`Photo ${photoIndex + 1}`}
-              className="w-full h-full object-cover rounded-2xl"
-              draggable={false}
-            />
-            {/* Tombol prev */}
+    <>
+      <div className="bg-white rounded-2xl shadow-lg p-6 text-center w-80 relative">
+        <div className="relative w-full h-96 mb-4 rounded-2xl overflow-hidden select-none">
+          {/* Tombol Info di kanan atas */}
+          <button
+            onClick={() => setShowInfo(true)}
+            className="absolute top-3 right-3 z-10 bg-white/70 backdrop-blur-sm p-2 rounded-full shadow hover:bg-white"
+          >
+            ℹ️
+          </button>
+
+          {photosArray.length > 0 ? (
+            <>
+              <img
+                src={`http://127.0.0.1:8000/storage/${photosArray[photoIndex]}`}
+                alt={`Photo ${photoIndex + 1}`}
+                className="w-full h-full object-cover rounded-2xl"
+                draggable={false}
+              />
+              {/* Tombol prev */}
             <button
               onClick={prevPhoto}
               disabled={photoIndex === 0}
               aria-label="Previous photo"
               className={`absolute top-1/2 left-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
-                ${
-                  photoIndex === 0
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-black/60 hover:scale-110 active:scale-95"
-                }`}
+                ${photoIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-black/60 hover:scale-110 active:scale-95"}`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
@@ -326,51 +334,83 @@ function MatchCard({ user, onActionDone }) {
               disabled={photoIndex === photosArray.length - 1}
               aria-label="Next photo"
               className={`absolute top-1/2 right-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
-                ${
-                  photoIndex === photosArray.length - 1
-                    ? "opacity-30 cursor-not-allowed"
-                    : "hover:bg-black/60 hover:scale-110 active:scale-95"
-                }`}
+                ${photoIndex === photosArray.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-black/60 hover:scale-110 active:scale-95"}`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
-          </>
-        ) : (
-          <img
-            src="https://via.placeholder.com/400x400?text=No+Image"
-            alt="No Image"
-            className="w-full h-full object-cover rounded-2xl"
-          />
-        )}
+            </>
+          ) : (
+            <img
+              src="https://via.placeholder.com/400x400?text=No+Image"
+              alt="No Image"
+              className="w-full h-full object-cover rounded-2xl"
+            />
+          )}
+        </div>
+
+        <h2 className="text-xl font-semibold select-text">
+          {user.name} {calculateAge(user.birthdate)}
+        </h2>
+        <p className="text-sm text-gray-500 mb-4 select-text">{user.campus}</p>
+
+        <div className="flex justify-around mt-4">
+          <button
+            onClick={handleDislike}
+            className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-red-100 transition"
+          >
+            ❌
+          </button>
+          <button
+            onClick={handleLike}
+            className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-blue-100 transition"
+          >
+            ❤️
+          </button>
+        </div>
       </div>
 
-      <h2 className="text-xl font-semibold select-text">
-        {user.name} {calculateAge(user.birthday) ?? 24}
-      </h2>
-      <p className="text-sm text-gray-500 mb-4 select-text">{user.campus}</p>
+      {/* MODAL INFO */}
+      {showInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative transition-all duration-300 ease-out scale-100">
+            {/* Close button */}
+            <button
+              onClick={() => setShowInfo(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-black transition"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-      <div className="flex justify-around mt-4">
-        <button
-          onClick={handleDislike}
-          className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-red-100 transition"
-        >
-          ❌
-        </button>
-        <button
-          onClick={handleLike}
-          className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-blue-100 transition"
-        >
-          ❤️
-        </button>
-      </div>
-    </div>
+            {/* User photo */}
+            <div className="w-full h-60 rounded-xl overflow-hidden mb-4">
+              <img
+                src={user.photos ? `http://127.0.0.1:8000/storage/${JSON.parse(user.photos)[0]}` : "https://via.placeholder.com/400x400?text=No+Image"}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* User name + age */}
+            <h2 className="text-2xl font-bold text-center mb-1">{user.name}, {calculateAge(user.birthdate)}</h2>
+            <p className="text-center text-sm text-gray-500 mb-4 italic">{user.status}</p>
+
+            {/* Info grid */}
+            <div className="space-y-2 text-sm text-gray-800">
+              <InfoRow label="🎓 Faculty" value={user.faculty || "-"} />
+              <InfoRow label="📘 Major" value={user.major || "-"} />
+              <InfoRow label="📍 Campus" value={user.campus || "-"} />
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+    </>
   );
 }
+

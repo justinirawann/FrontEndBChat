@@ -7,12 +7,42 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  
 
   const isProfileComplete = (user) => {
-    const photos = Array.isArray(user.photos) ? user.photos : [];
+    let photos = [];
 
-    return !!user.birthday && photos.length > 0;
+    if (Array.isArray(user.photos)) {
+      photos = user.photos.filter(Boolean);
+    } else if (typeof user.photos === "string") {
+      try {
+        const parsed = JSON.parse(user.photos);
+        if (Array.isArray(parsed)) {
+          photos = parsed.filter(Boolean);
+        }
+      } catch (err) {
+        console.warn("Failed to parse photos JSON:", err);
+      }
+    }
+
+    const birthdateExists = !!user.birthdate;
+    const campusExists = !!user.campus;
+    const photosExist = photos.length > 0;
+
+    console.log({
+      rawPhotos: user.photos,
+      parsedPhotos: photos,
+      birthdateExists,
+      campusExists,
+      photosCount: photos.length,
+      finalResult: birthdateExists && campusExists && photosExist,
+    });
+
+    return birthdateExists && campusExists && photosExist;
   };
+
+
+
 
 
   const handleLogin = async () => {
@@ -35,12 +65,15 @@ export default function LoginPage() {
       const data = await response.json();
 
       // ✅ DEBUG: cek isi data user
-      console.log("Birthday:", data.user.birthday);
+      console.log("Birthday:", data.user.birthdate);
       console.log("Photos:", data.user.photos);
+      console.log("Campus", data.user.campus)
       console.log("isProfileComplete:", isProfileComplete(data.user));
+      console.log("User data after login:", data.user);
 
       console.log("Login Success:", data);
       localStorage.setItem("token", data.token);
+      
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("major", JSON.stringify(data.major));
       localStorage.setItem("faculty", JSON.stringify(data.faculty));

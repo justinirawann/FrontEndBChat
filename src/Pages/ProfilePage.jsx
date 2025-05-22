@@ -37,18 +37,15 @@ export default function ProfilePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (loading) {
+    const fetchFacultiesAndMajors = async () => {
       Swal.fire({
         title: "Loading data...",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
-        }
+        },
       });
-    } else {
-      Swal.close();
-    }
-    const fetchFacultiesAndMajors = async () => {
+
       try {
         const facultyRes = await fetch("http://127.0.0.1:8000/api/getfaculty");
         const majorRes = await fetch("http://127.0.0.1:8000/api/getmajor");
@@ -61,13 +58,16 @@ export default function ProfilePage() {
       } catch (err) {
         console.error("Failed to fetch data", err);
         setError("Failed to load faculty or major data.");
+        Swal.fire("Error", "Failed to load faculty or major data", "error");
       } finally {
+        Swal.close(); // Tutup swal loading setelah fetch selesai
         setLoading(false);
       }
     };
 
     fetchFacultiesAndMajors();
-  }, [loading]);
+  }, []);
+
 
   const uploadPhoto = async (file) => {
     const formData = new FormData();
@@ -132,20 +132,27 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
-
     if (
-          !profile.name?.trim() ||
-          !profile.birthdate?.trim() ||
-          !profile.campus?.trim()
-        ) {
-          Swal.fire("Missing fields", "Please complete your profile", "warning");
-          return;
-        }
-
-    if ((profile.photos || []).filter(Boolean).length < 1) {
-      Swal.fire("Add Photos", "Please upload at least 1 profile photos", "warning");
+      !profile.name?.trim() ||
+      !profile.birthdate?.trim() ||
+      !profile.campus?.trim()
+    ) {
+      Swal.fire("Missing fields", "Please complete your profile", "warning");
       return;
     }
+
+    if ((profile.photos || []).filter(Boolean).length < 1) {
+      Swal.fire("Add Photos", "Please upload at least 1 profile photo", "warning");
+      return;
+    }
+
+    Swal.fire({
+      title: "Saving profile...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
 
     try {
       const res = await fetch("http://127.0.0.1:8000/api/profile/update", {
@@ -169,27 +176,33 @@ export default function ProfilePage() {
       });
 
       const data = await res.json();
+      Swal.close(); // Pastikan swal loading ditutup dulu
 
       if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Profile Updated!",
-          text: "Saving changes...",
-          confirmButtonText: "Ok",
-          showConfirmButton: true
-        });
-        setProfile(data.user);
+        // Simpan ke localStorage
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("major", JSON.stringify(data.user.major || ""));
         localStorage.setItem("faculty", JSON.stringify(data.user.faculty || ""));
+
+        // Tampilkan sukses lalu reload halaman
+        Swal.fire({
+          icon: "success",
+          title: "Profile Updated!",
+          text: "Your changes have been saved.",
+          confirmButtonText: "OK",
+        }).then(() => {
+          window.location.reload();
+        });
       } else {
-        alert(data.errors?.[0] || "Failed to update profile");
+        Swal.fire("Error", data.errors?.[0] || "Failed to update profile", "error");
       }
     } catch (err) {
       console.error("Update error", err);
-      alert("Failed to update profile");
+      Swal.close();
+      Swal.fire("Error", "Failed to update profile", "error");
     }
   };
+
 
   function isProfileComplete() {
     return (
