@@ -7,6 +7,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+
+  const isProfileComplete = (user) => {
+  // Contoh cek sederhana, sesuaikan dengan kondisi asli profil lengkapmu
+  return user.birthday && user.photos && JSON.parse(user.photos).length > 0;
+  };
   const handleLogin = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/login", {
@@ -30,7 +35,13 @@ export default function LoginPage() {
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("major", JSON.stringify(data.major));
       localStorage.setItem("faculty", JSON.stringify(data.faculty));
+      
+      if (isProfileComplete(data.user)) {
       navigate("/home");
+      } else {
+        navigate("/profile");
+      }
+      
     } catch (err) {
       console.error(err);
       setError(err.message || "Login failed");

@@ -132,6 +132,21 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
+
+    if (
+          !profile.name?.trim() ||
+          !profile.birthdate?.trim() ||
+          !profile.campus?.trim()
+        ) {
+          Swal.fire("Missing fields", "Please complete your profile", "warning");
+          return;
+        }
+
+    if ((profile.photos || []).filter(Boolean).length < 1) {
+      Swal.fire("Add Photos", "Please upload at least 1 profile photos", "warning");
+      return;
+    }
+
     try {
       const res = await fetch("http://127.0.0.1:8000/api/profile/update", {
         method: "PUT",
@@ -141,6 +156,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           id: profile.id,
           name: profile.name,
+          email: profile.email,
           birthdate: profile.birthdate,
           gender: profile.gender,
           status: profile.status,
@@ -175,11 +191,32 @@ export default function ProfilePage() {
     }
   };
 
+  function isProfileComplete() {
+    return (
+      profile.name?.trim() &&
+      profile.email?.trim() &&
+      profile.birthdate?.trim() &&
+      profile.gender &&
+      profile.status &&
+      profile.campus &&
+      profile.faculty_id &&
+      profile.major_id &&
+      (profile.photos || []).filter(Boolean).length >= 1
+    );
+  }
+
+
   return (
     <div className="min-h-screen bg-[#e6efff] flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <button
-          onClick={() => navigate("/home")}
+          onClick={() => {
+            if (!isProfileComplete()) {
+              Swal.fire("Incomplete Profile", "Please complete your profile before going back.", "warning");
+              return;
+            }
+            navigate("/home");
+          }}
           className="mb-6 text-gray-700 font-semibold relative cursor-pointer 
             before:absolute before:bottom-0 before:left-0 before:w-0 before:h-[2px] 
             before:bg-gray-700 before:transition-all before:duration-300 
@@ -189,6 +226,7 @@ export default function ProfilePage() {
         >
           ← Back to Home
         </button>
+
 
         <h2 className="text-2xl font-semibold text-center mb-6">Edit Profile</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
