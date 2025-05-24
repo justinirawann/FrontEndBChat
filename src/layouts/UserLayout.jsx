@@ -13,9 +13,12 @@ export default function UserLayout() {
     description: "",
     photos: [],
   });
-
-  
   const [matches, setMatches] = useState([]);
+  const [chats, setChats] = useState([]); // State untuk data messages/chat
+
+  // State modal untuk detail match
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
   const navigate = useNavigate();
 
   function getFirstPhoto(match) {
@@ -29,6 +32,11 @@ export default function UserLayout() {
       }
     }
     return match.photos.length > 0 ? match.photos[0] : null;
+  }
+
+  function getPhotoUrl(photoPath) {
+    if (!photoPath) return "/default-avatar.png";
+    return `http://127.0.0.1:8000/storage/${photoPath}`;
   }
 
   useEffect(() => {
@@ -58,19 +66,19 @@ export default function UserLayout() {
         photos: parsedUser.photos || [],
       });
 
+      // Fetch matches
       fetch(`http://127.0.0.1:8000/api/matches?user_id=${parsedUser.id}`)
         .then((res) => res.json())
         .then((data) => setMatches(data))
         .catch((error) => console.error("Failed to fetch matches:", error));
+
+      // Fetch chats/messages
+      fetch(`http://127.0.0.1:8000/api/chats?user_id=${parsedUser.id}`)
+        .then((res) => res.json())
+        .then((data) => setChats(data))
+        .catch((error) => console.error("Failed to fetch chats:", error));
     }
   }, []);
-
-
-
-  function getPhotoUrl(photoPath) {
-    if (!photoPath) return "/default-avatar.png";
-    return `http://127.0.0.1:8000/storage/${photoPath}`;
-  }
 
   if (!user) {
     return <div>Loading...</div>;
@@ -84,7 +92,11 @@ export default function UserLayout() {
         <div className="bg-yellow-500 h-24 flex items-center px-4 text-white relative">
           <Link to="/profile">
             <img
-              src={profile.photos.length > 0 ? getPhotoUrl(profile.photos[0]) : "/default-avatar.png"}
+              src={
+                profile.photos.length > 0
+                  ? getPhotoUrl(profile.photos[0])
+                  : "/default-avatar.png"
+              }
               alt="Profile"
               className="w-12 h-12 bg-gray-300 rounded-full hover:ring-2 hover:ring-white transition"
             />
@@ -113,54 +125,96 @@ export default function UserLayout() {
                 ? "border-b-2 border-yellow-500 text-yellow-600"
                 : "text-gray-500"
             }`}
-            onClick={() => setActiveTab("matches")}
+            onClick={() => {
+              setActiveTab("matches");
+              navigate("/home");
+            }}
           >
             Matches{" "}
             <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">
               {matches.length}
             </span>
           </button>
+
           <button
             className={`flex-1 text-sm font-medium py-2 px-4 ${
               activeTab === "messages"
                 ? "border-b-2 border-yellow-500 text-yellow-600"
                 : "text-gray-500"
             }`}
-            onClick={() => setActiveTab("messages")}
+            onClick={() => {
+              setActiveTab("messages");
+              navigate("/messages");
+            }}
           >
             Messages{" "}
             <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">
-              0
+              {chats.length}
             </span>
           </button>
         </div>
 
-        {/* Match Grid */}
+        {/* Sidebar Content: Matches or Messages */}
         <div className="overflow-y-auto flex-1 p-2">
-          {matches.length === 0 ? (
-            <p className="text-gray-500 text-sm text-center mt-4">
-              No matches yet.
-            </p>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {matches.map((match, index) => (
-                <div
-                  key={index}
-                  className="relative cursor-pointer"
-                  onClick={() => navigate(`/chat/${match.id}`)}
-                >
-                  <img
-                    src={getPhotoUrl(getFirstPhoto(match)) || "/default-avatar.png"}
-                    alt="Match"
-                    className="w-full h-24 object-cover rounded-lg"
-                  />
-
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs font-semibold p-1 rounded-b-lg text-center">
-                    {match.name}
+          {activeTab === "matches" && (
+            matches.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center mt-4">
+                No matches yet.
+              </p>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {matches.map((match, index) => (
+                  <div
+                    key={index}
+                    className="relative cursor-pointer"
+                    onClick={() => setSelectedMatch(match)}
+                  >
+                    <img
+                      src={
+                        getPhotoUrl(getFirstPhoto(match)) || "/default-avatar.png"
+                      }
+                      alt="Match"
+                      className="w-full h-24 object-cover rounded-lg"
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs font-semibold p-1 rounded-b-lg text-center">
+                      {match.name}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {activeTab === "messages" && (
+            chats.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center mt-4">No messages yet.</p>
+            ) : (
+              <ul>
+                {chats.map((chat) => (
+                  <li
+                    key={chat.id}
+                    className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => {
+                      localStorage.setItem("matchedUser", JSON.stringify(chat.matchedUser));
+                      navigate(`/messages/${chat.matchedUser.id}`);
+                    }}
+                  >
+                    <img
+                      src={getPhotoUrl(chat.matchedUser.photos[0])}
+                      alt="Avatar"
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="ml-3 flex-1 border-b border-gray-200 pb-2">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-sm font-semibold">{chat.matchedUser.name}</h4>
+                        <span className="text-xs text-gray-400">{chat.lastMessageTime}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 truncate">{chat.lastMessage || "No messages yet."}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
           )}
         </div>
       </div>
@@ -169,6 +223,40 @@ export default function UserLayout() {
       <div className="flex-1 bg-gray-100 p-6 overflow-y-auto">
         <Outlet />
       </div>
+
+      {/* MODAL for Match Detail */}
+      {selectedMatch && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-sm w-full">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg font-semibold">{selectedMatch.name}</h2>
+              <button
+                onClick={() => setSelectedMatch(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <img
+              src={
+                getPhotoUrl(getFirstPhoto(selectedMatch)) ||
+                "/default-avatar.png"
+              }
+              alt="Match"
+              className="w-full h-48 object-cover rounded-lg mb-2"
+            />
+            <p className="text-sm text-gray-600 mb-4">
+              {selectedMatch.description || "No description."}
+            </p>
+            <button
+              onClick={() => navigate(`/chat/${selectedMatch.id}`)}
+              className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition w-full"
+            >
+              Start Chatting...
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

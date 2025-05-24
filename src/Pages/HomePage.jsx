@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
+import { Mars, Venus } from 'lucide-react';
 
 
 export default function HomePage() {
@@ -81,28 +82,34 @@ export default function HomePage() {
       const newMatches = await res.json();
 
       if (newMatches.length > 0) {
-        for (const match of newMatches) {
-          await Swal.fire({
-            title: "It's a match!",
-            text: `You matched with ${match.name}`,
-            imageUrl: match.photos ? `http://127.0.0.1:8000/storage/${JSON.parse(match.photos)[0]}` : undefined,
-            imageWidth: 300,
-            imageHeight: 300,
-            confirmButtonText: "Nice!",
-          });
-        }
+        // Gabungkan semua nama user yang match baru
+        const names = newMatches.map(m => m.name).join(", ");
 
-        const matchIds = newMatches.map((m) => m.match_id);
+        await Swal.fire({
+          title: "It's a match!",
+          html: `You matched with: <b>${names}</b>`,
+          // Bisa juga tambahkan gambar salah satu match (misal match pertama)
+          imageUrl: newMatches[0].photos ? `http://127.0.0.1:8000/storage/${JSON.parse(newMatches[0].photos)[0]}` : undefined,
+          imageWidth: 300,
+          imageHeight: 300,
+          confirmButtonText: "Nice!",
+        });
+
+        // Tandai semua match sudah diberitahu
+        const matchIds = newMatches.map(m => m.match_id);
         await fetch("http://127.0.0.1:8000/api/mark-matches-notified", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ match_ids: matchIds }),
         });
+
+        window.location.reload();
       }
     } catch (err) {
       console.error("Error fetching new matches notifications:", err);
     }
   };
+
 
   const handleSavePreferences = async () => {
     if (!user) return;
@@ -142,7 +149,7 @@ export default function HomePage() {
 
   return (
     <div
-      className="relative min-h-screen p-6"
+      className="relative min-h-screen p-6 bg-gray-200"
       style={{
         // backgroundImage: 'url("/homepage.png")',
         backgroundSize: "cover",
@@ -350,9 +357,17 @@ function MatchCard({ user, onActionDone }) {
           )}
         </div>
 
-        <h2 className="text-xl font-semibold select-text">
-          {user.name} {calculateAge(user.birthdate)}
-        </h2>
+        <div className="flex items-center justify-center gap-2 text-xl font-semibold select-text">
+          <span>{user.name}, {calculateAge(user.birthdate)}</span>
+          {user.gender === "male" && (
+            <Mars className="text-blue-500 w-5 h-5" title="Male" />
+          )}
+          {user.gender === "female" && (
+            <Venus className="text-pink-500 w-5 h-5" title="Female" />
+          )}
+        </div>
+
+
         <p className="text-sm text-gray-500 mb-4 select-text">{user.campus}</p>
 
         <div className="flex justify-around mt-4">
@@ -400,9 +415,11 @@ function MatchCard({ user, onActionDone }) {
 
             {/* Info grid */}
             <div className="space-y-2 text-sm text-gray-800">
+              <InfoRow label="📍 Campus" value={user.campus || "-"} />
               <InfoRow label="🎓 Faculty" value={user.faculty || "-"} />
               <InfoRow label="📘 Major" value={user.major || "-"} />
-              <InfoRow label="📍 Campus" value={user.campus || "-"} />
+              <InfoRow label="📝 About" value={user.description || "-"} />
+
             </div>
           </div>
         </div>

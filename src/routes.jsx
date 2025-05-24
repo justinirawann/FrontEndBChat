@@ -6,7 +6,8 @@ import LoginPage from "./Pages/LoginPage";
 import HomePage from "./Pages/HomePage";
 import ProfilePage from "./Pages/ProfilePage";
 import RegisterPage from "./Pages/RegisterPage";
-import UserLayout from "./layouts/UserLayout"; // pastikan path-nya sesuai
+import UserLayout from "./layouts/UserLayout";
+import ChattingPage from "./Pages/ChattingPage";
 
 export default function AppRoutes() {
   return (
@@ -21,6 +22,7 @@ export default function AppRoutes() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/profile" element={<ProfilePage />} />
         {/* <Route path="/matches" element={<MatchesPage />} /> */}
+        <Route path="/messages" element={<ChattingPage />} />
 
       </Route>
     </Routes>
