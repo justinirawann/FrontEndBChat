@@ -41,7 +41,6 @@ export default function HomePage() {
     return () => clearInterval(interval); // Bersihkan interval saat komponen unmount
   }, [user]);
 
-
   const refreshMatches = async () => {
     try {
       Swal.fire({
@@ -163,7 +162,7 @@ export default function HomePage() {
         <div className="absolute top-6 right-6 z-20">
           <button
             onClick={() => setShowPreferences(!showPreferences)}
-            className="bg-yellow-500 text-white px-4 py-2 rounded-xl shadow hover:bg-orange-600 transition"
+            className="bg-yellow-500 text-white px-4 py-2 rounded-xl shadow hover:bg-yellow-600 transition"
           >
             Preferences
           </button>
@@ -174,7 +173,7 @@ export default function HomePage() {
           <div className="absolute top-20 right-6 bg-white p-6 rounded-xl shadow-xl w-72 z-30">
             <h3 className="text-lg font-semibold mb-4">Set Preferences</h3>
 
-            <label className="block mb-2 text-sm font-medium">Preferred Gender</label>
+            <label className="block mb-2 text-sm font-medium">Gender</label>
             <select
               className="w-full p-2 border rounded mb-4"
               value={preferredGender}
@@ -185,7 +184,7 @@ export default function HomePage() {
               <option value="female">Female</option>
             </select>
 
-            <label className="block mb-2 text-sm font-medium">Preferred Campus</label>
+            <label className="block mb-2 text-sm font-medium">Campus</label>
             <select
               className="w-full p-2 border rounded mb-4"
               value={preferredCampus}
@@ -206,7 +205,6 @@ export default function HomePage() {
                 </option>
               ))}
             </select>
-
             <button
               onClick={handleSavePreferences}
               className="w-full bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600"
@@ -419,6 +417,15 @@ function MatchCard({ user, onActionDone }) {
               <InfoRow label="🎓 Faculty" value={user.faculty || "-"} />
               <InfoRow label="📘 Major" value={user.major || "-"} />
               <InfoRow label="📝 About" value={user.description || "-"} />
+              <InfoRow
+                label="⭐ Hobbies"
+                value={user.hobbies && user.hobbies.length > 0
+                  ? user.hobbies.join(", ")
+                  : "-"}
+              />
+
+              
+
 
             </div>
           </div>
@@ -429,5 +436,6 @@ function MatchCard({ user, onActionDone }) {
 
     </>
   );
+
 }
 
