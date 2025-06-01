@@ -1,4 +1,6 @@
-import { AiOutlinePlus } from "react-icons/ai";
+import { AiOutlineUser, AiOutlineMail, AiOutlineCalendar, AiOutlineCamera, AiOutlineHome } from "react-icons/ai";
+import { FaUniversity, FaBook, FaVenusMars, FaHeart, FaImage, FaPencilAlt, FaVenus, FaMars } from "react-icons/fa";
+import { BiSolidCommentDetail } from "react-icons/bi";
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom"; // ganti sesuai routing kamu
@@ -25,9 +27,10 @@ export default function ProfilePage() {
 
     return {
       ...userData,
-      photos: userData.photos || [],
+      photos: userData.photos || [], 
       major: storedMajor ? JSON.parse(storedMajor) : userData.major || "",
       faculty: storedFaculty ? JSON.parse(storedFaculty) : userData.faculty || "",
+
     };
   });
 
@@ -37,18 +40,15 @@ export default function ProfilePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (loading) {
+    const fetchFacultiesAndMajors = async () => {
       Swal.fire({
         title: "Loading data...",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
-        }
+        },
       });
-    } else {
-      Swal.close();
-    }
-    const fetchFacultiesAndMajors = async () => {
+
       try {
         const facultyRes = await fetch("http://127.0.0.1:8000/api/getfaculty");
         const majorRes = await fetch("http://127.0.0.1:8000/api/getmajor");
@@ -61,13 +61,22 @@ export default function ProfilePage() {
       } catch (err) {
         console.error("Failed to fetch data", err);
         setError("Failed to load faculty or major data.");
+        Swal.fire("Error", "Failed to load faculty or major data", "error");
       } finally {
+        Swal.close(); // Tutup swal loading setelah fetch selesai
         setLoading(false);
       }
     };
 
     fetchFacultiesAndMajors();
-  }, [loading]);
+  }, []);
+
+  const statusColors = {
+    single: "bg-yellow-300 text-white",
+    taken: "bg-red-400 text-white",
+    complicated: "bg-yellow-600 text-white",
+  };
+
 
   const uploadPhoto = async (file) => {
     const formData = new FormData();
@@ -92,6 +101,13 @@ export default function ProfilePage() {
     }
   };
 
+  const hobbyOptions = [
+    "reading", "traveling", "gaming", "cooking", "basketball", "futsal",
+    "soccer", "volleyball", "movies", "fishing", "photography", "writing",
+    "hiking", "swimming", "coding", "piano", "drum", "bass", "guitar", "music"
+  ];
+
+
   const handlePhotoChange = async (e, index) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -115,13 +131,55 @@ export default function ProfilePage() {
   };
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    if (name === "faculty") {
+      setProfile((prev) => ({
+        ...prev,
+        faculty_id: value,
+        major_id: "", // reset major id di sini
+      }));
+    } else {
+      setProfile((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  }
+
+  const toggleHobby = (hobby) => {
+    setProfile((prev) => {
+      const hobbies = prev.hobbies || [];
+      if (hobbies.includes(hobby)) {
+        return { ...prev, hobbies: hobbies.filter((h) => h !== hobby) };
+      } else {
+        return { ...prev, hobbies: [...hobbies, hobby] };
+      }
+    });
   };
 
   const handleSave = async () => {
+    if (
+      !profile.name?.trim() ||
+      !profile.birthdate?.trim() ||
+      !profile.campus?.trim()
+    ) {
+      Swal.fire("Missing fields", "Please complete your profile", "warning");
+      return;
+    }
+
+    if ((profile.photos || []).filter(Boolean).length < 1) {
+      Swal.fire("Add Photos", "Please upload at least 1 profile photo", "warning");
+      return;
+    }
+
+    Swal.fire({
+      title: "Saving profile...",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       const res = await fetch("http://127.0.0.1:8000/api/profile/update", {
         method: "PUT",
@@ -131,6 +189,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           id: profile.id,
           name: profile.name,
+          email: profile.email,
           birthdate: profile.birthdate,
           gender: profile.gender,
           status: profile.status,
@@ -139,37 +198,64 @@ export default function ProfilePage() {
           campus: profile.campus,
           description: profile.description,
           photos: profile.photos,
+          
         }),
       });
 
       const data = await res.json();
+      Swal.close(); // Pastikan swal loading ditutup dulu
 
       if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Profile Updated!",
-          text: "Saving changes...",
-          confirmButtonText: "Ok",
-          showConfirmButton: true
-        });
-        setProfile(data.user);
+        // Simpan ke localStorage
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.setItem("major", JSON.stringify(data.user.major || ""));
         localStorage.setItem("faculty", JSON.stringify(data.user.faculty || ""));
+
+        // Tampilkan sukses lalu reload halaman
+        Swal.fire({
+          icon: "success",
+          title: "Profile Updated!",
+          text: "Your changes have been saved.",
+          confirmButtonText: "OK",
+        }).then(() => {
+          window.location.reload();
+        });
       } else {
-        alert(data.errors?.[0] || "Failed to update profile");
+        Swal.fire("Error", data.errors?.[0] || "Failed to update profile", "error");
       }
     } catch (err) {
       console.error("Update error", err);
-      alert("Failed to update profile");
+      Swal.close();
+      Swal.fire("Error", "Failed to update profile", "error");
     }
   };
+
+
+  function isProfileComplete() {
+    return (
+      profile.name?.trim() &&
+      profile.email?.trim() &&
+      profile.birthdate?.trim() &&
+      profile.gender &&
+      profile.status &&
+      profile.campus &&
+      profile.faculty_id &&
+      profile.major_id &&
+      (profile.photos || []).filter(Boolean).length >= 1
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#e6efff] flex items-center justify-center px-4">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <button
-          onClick={() => navigate("/home")}
+          onClick={() => {
+            if (!isProfileComplete()) {
+              Swal.fire("Incomplete Profile", "Please complete your profile before going back.", "warning");
+              return;
+            }
+            navigate("/home");
+          }}
           className="mb-6 text-gray-700 font-semibold relative cursor-pointer 
             before:absolute before:bottom-0 before:left-0 before:w-0 before:h-[2px] 
             before:bg-gray-700 before:transition-all before:duration-300 
@@ -180,10 +266,16 @@ export default function ProfilePage() {
           ← Back to Home
         </button>
 
-        <h2 className="text-2xl font-semibold text-center mb-6">Edit Profile</h2>
+
+        <h2 className="text-2xl font-semibold text-center mb-6 flex items-center justify-center gap-2">
+          <FaPencilAlt className="text-blue-300"/>
+          Edit Profile
+        </h2>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block mb-2 font-medium">Name</label>
+            <label className="block mb-2 font-medium flex items-center gap-2"><AiOutlineUser />Name</label>
+
             <input
               type="text"
               name="name"
@@ -192,7 +284,7 @@ export default function ProfilePage() {
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
 
-            <label className="block mb-2 font-medium">Email</label>
+            <label className="block mb-2 font-medium flex items-center gap-2"><AiOutlineMail />Email</label>
             <input
               type="email"
               name="email"
@@ -201,7 +293,7 @@ export default function ProfilePage() {
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
 
-            <label className="block mb-2 font-medium">Birthdate</label>
+            <label className="block mb-2 font-medium flex items-center gap-2"><AiOutlineCalendar />Birthdate</label>
             <input
               type="date"
               name="birthdate"
@@ -209,7 +301,31 @@ export default function ProfilePage() {
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
-            <label className="block mb-2 font-medium">Gender</label>
+            <label className="block mb-2 font-medium">⭐Hobbies</label>
+            <div className="flex flex-wrap gap-1 mb-4 justify-start">
+              {hobbyOptions.map((hobby) => (
+                <button
+                  key={hobby}
+                  type="button"
+                  onClick={() => toggleHobby(hobby)}
+                  className={`w-24 h-8 flex items-center justify-center rounded-full border border-gray-300 text-xs capitalize shadow-sm transition-colors duration-200
+                    ${
+                      profile.hobbies?.includes(hobby)
+                        ? "bg-green-300 text-white font-semibold shadow-inner"
+                        : "bg-white text-gray-700 hover:bg-gray-200"
+                    }
+                  `}
+                >
+                  {hobby}
+                </button>
+              ))}
+            </div>
+            <label className="block mb-2 font-medium flex items-center gap-2">
+              <FaMars className="text-blue-500" />
+              |
+              <FaVenus className="text-pink-500" />
+              Gender
+            </label> 
             <div className="flex space-x-2 mb-4">
               {["male", "female"].map((g) => (
                 <button
@@ -221,7 +337,7 @@ export default function ProfilePage() {
                       ? g === "male"
                         ? "bg-blue-300 text-white font-semibold"
                         : "bg-pink-300 text-white font-semibold"
-                      : "hover:bg-gray-100"
+                      : "hover:bg-gray-200"
                   }`}
                 >
                   {g}
@@ -229,7 +345,10 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            <label className="block mb-2 font-medium">Status</label>
+            <label className="block mb-2 font-medium flex items-center gap-2">
+              <FaHeart className="text-red-400"/>
+              Status
+            </label>
             <div className="flex space-x-2 mb-4">
               {["single", "taken", "complicated"].map((s) => (
                 <button
@@ -238,8 +357,8 @@ export default function ProfilePage() {
                   onClick={() => setProfile({ ...profile, status: s })}
                   className={`flex-1 rounded-full border py-2 capitalize transition-all duration-200 ${
                     profile.status === s
-                      ? "bg-yellow-300 text-white font-semibold"
-                      : "bg-white text-gray-700 hover:bg-gray-100"
+                      ? statusColors[s]
+                      : "bg-white text-gray-700 hover:bg-gray-200"
                   }`}
                 >
                   {s}
@@ -247,7 +366,7 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            <label className="block mb-2 font-medium">Description</label>
+            <label className="block mb-2 font-medium">📝Description</label>
             <textarea
               name="description"
               value={profile.description || ""}
@@ -255,7 +374,7 @@ export default function ProfilePage() {
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
 
-            <label className="block mb-2 font-medium">Campus</label>
+            <label className="block mb-2 font-medium">📍Campus</label>
             <select
               name="campus"
               value={profile.campus || ""}
@@ -278,44 +397,44 @@ export default function ProfilePage() {
               ))}
             </select>
 
-            <label className="block mb-2 font-medium">Faculty</label>
-              <select
-                name="faculty"
-                value={profile.faculty_id || ""}
-                onChange={(e) => {
-                  handleChange(e);
-                  setProfile((prev) => ({ ...prev, major_id: "" }));
-                }}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-              >
-                <option value="">Choose Faculty</option>
-                {faculties.map((faculty) => (
-                  <option key={faculty.id} value={faculty.id}>
-                    {faculty.name}
+            <label className="block mb-2 font-medium">🎓Faculty</label>
+            <select
+              name="faculty"
+              value={profile.faculty_id || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+            >
+              <option value="">Choose Faculty</option>
+              {faculties.map((faculty) => (
+                <option key={faculty.id} value={faculty.id}>
+                  {faculty.name}
+                </option>
+              ))}
+            </select>
+
+            <label className="block mb-2 font-medium">📘Major</label>
+            <select
+              name="major_id"
+              value={profile.major_id || ""}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md p-3 mb-4"
+              disabled={!profile.faculty_id}
+            >
+              <option value="">Choose Major</option>
+              {majors
+                .filter((major) => major.faculty_id === Number(profile.faculty_id))
+                .map((major) => (
+                  <option key={major.id} value={major.id}>
+                    {major.name}
                   </option>
                 ))}
-              </select>
-
-              <label className="block mb-2 font-medium">Major</label>
-              <select
-                name="major"
-                value={profile.major_id || ""}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md p-3 mb-4"
-                disabled={!profile.faculty_id}
-              >
-                <option value="">Choose Major</option>
-                {majors
-                  .filter((major) => major.faculty_id === parseInt(profile.faculty_id || "-1", 10))
-                  .map((major) => (
-                    <option key={major.id} value={major.id}>
-                      {major.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-             <div className="flex flex-col items-center">
-            <label className="block mb-2 font-medium">Profile photos</label>
+            </select>
+          </div>
+          <div className="flex flex-col items-center">
+            <label className="block mb-2 font-medium flex items-center gap-2">
+              <FaImage />
+              Profile Photos
+            </label>
             <div className="grid grid-cols-3 gap-4 mb-4">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
@@ -358,7 +477,7 @@ export default function ProfilePage() {
             </div>
 
             <p className="text-gray-500 text-sm text-center">
-              Upload 2 photos to start. Add 4 or more to make your profile stand out.
+              Upload 1 photos to start. And add more to make your profile stand out.
             </p>
           </div>
         </div>
