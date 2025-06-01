@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 
 export default function UserLayout() {
-  const [activeTab, setActiveTab] = useState("matches");
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("activeTab") || "matches";
+  });
+
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState({
     name: "",
@@ -13,10 +16,14 @@ export default function UserLayout() {
     description: "",
     photos: [],
   });
+  const [loading, setLoading] = useState(true);
+
+  const location = useLocation();
+  const matchedUser = location.state?.matchedUser;
   const [matches, setMatches] = useState([]);
   const [chats, setChats] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
-  const [selectedChatId, setSelectedChatId] = useState(null); // ⬅️ Tambah state ini
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const navigate = useNavigate();
 
   function getFirstPhoto(match) {
@@ -36,6 +43,99 @@ export default function UserLayout() {
     if (!photoPath) return "/default-avatar.png";
     return `http://127.0.0.1:8000/storage/${photoPath}`;
   }
+
+  function updateChatLastMessage(chatId, newLastMessage, newLastMessageTime) {
+    setChats((prevChats) =>
+      prevChats.map((chat) => {
+        if (chat.id === chatId) {
+          let photos = chat.matchedUser?.photos;
+
+          if (typeof photos === "string") {
+            try {
+              photos = JSON.parse(photos);
+            } catch {
+              photos = [];
+            }
+          } else if (!Array.isArray(photos)) {
+            photos = [];
+          }
+
+          return {
+            ...chat,
+            lastMessage: newLastMessage,
+            lastMessageTime: newLastMessageTime,
+            matchedUser: {
+              ...chat.matchedUser,
+              photos,
+            },
+          };
+        }
+        return chat;
+      })
+    );
+  }
+
+  // Fungsi fetch matches
+  const fetchMatches = (userId) => {
+    fetch(`http://127.0.0.1:8000/api/matches?user_id=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const processedMatches = data.map((m) => ({
+            ...m,
+            photos:
+              typeof m.photos === "string"
+                ? (() => {
+                    try {
+                      return JSON.parse(m.photos);
+                    } catch {
+                      return [];
+                    }
+                  })()
+                : m.photos || [],
+          }));
+          setMatches(processedMatches);
+        } else {
+          setMatches([]);
+          console.warn("Matches data is not an array:", data);
+        }
+      })
+      .catch((error) => console.error("Failed to fetch matches:", error));
+  };
+
+  // Fungsi fetch chats
+  const fetchChats = (userId) => {
+    fetch(`http://127.0.0.1:8000/api/chat/conversations?user_id=${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const processedChats = data.map((chat) => ({
+            ...chat,
+            matchedUser: {
+              ...chat.matchedUser,
+              photos:
+                typeof chat.matchedUser?.photos === "string"
+                  ? (() => {
+                      try {
+                        return JSON.parse(chat.matchedUser.photos);
+                      } catch {
+                        return [];
+                      }
+                    })()
+                  : chat.matchedUser?.photos || [],
+            },
+          }));
+          setChats(processedChats);
+        } else if (data.errors) {
+          console.warn("Chats API returned errors:", data.errors);
+          setChats([]);
+        } else {
+          setChats([]);
+          console.warn("Chats data is not an array:", data);
+        }
+      })
+      .catch((error) => console.error("Failed to fetch chat conversations:", error));
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -64,68 +164,44 @@ export default function UserLayout() {
         photos: parsedUser.photos || [],
       });
 
-      // Fetch matches
-      fetch(`http://127.0.0.1:8000/api/matches?user_id=${parsedUser.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            const processedMatches = data.map((m) => ({
-              ...m,
-              photos:
-                typeof m.photos === "string"
-                  ? (() => {
-                      try {
-                        return JSON.parse(m.photos);
-                      } catch {
-                        return [];
-                      }
-                    })()
-                  : m.photos || [],
-            }));
-            setMatches(processedMatches);
-          } else {
-            setMatches([]);
-            console.warn("Matches data is not an array:", data);
-          }
-        })
-        .catch((error) => console.error("Failed to fetch matches:", error));
+      // Fetch awal
+      fetchMatches(parsedUser.id);
+      fetchChats(parsedUser.id);
 
-      // Fetch ALL chats (tidak pakai matchedUserId)
-      fetch(`http://127.0.0.1:8000/api/chat/conversations?user_id=${parsedUser.id}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            const processedChats = data.map((chat) => ({
-              ...chat,
-              matchedUser: {
-                ...chat.matchedUser,
-                photos:
-                  typeof chat.matchedUser?.photos === "string"
-                    ? (() => {
-                        try {
-                          return JSON.parse(chat.matchedUser.photos);
-                        } catch {
-                          return [];
-                        }
-                      })()
-                    : chat.matchedUser?.photos || [],
-              },
-            }));
-            setChats(processedChats);
-          } else if (data.errors) {
-            console.warn("Chats API returned errors:", data.errors);
-            setChats([]);
-          } else {
-            setChats([]);
-            console.warn("Chats data is not an array:", data);
-          }
-        })
-        .catch((error) => console.error("Failed to fetch chat conversations:", error));
+      // Set polling interval
+      const intervalId = setInterval(() => {
+        fetchMatches(parsedUser.id);
+        fetchChats(parsedUser.id);
+      }, 1000);
+
+      setLoading(false);
+
+      return () => clearInterval(intervalId); // Bersihkan interval saat unmount
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  if (!user) {
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "matches") {
+      navigate("/home");
+    } else if (activeTab === "messages") {
+      if (!location.pathname.startsWith("/messages/")) {
+        navigate("/messages");
+      }
+    }
+  }, [activeTab, navigate, location.pathname]);
+
+  if (loading) {
     return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <div>User not logged in.</div>;
   }
 
   return (
@@ -171,7 +247,6 @@ export default function UserLayout() {
             onClick={() => {
               setActiveTab("matches");
               setSelectedChatId(null);
-              navigate("/home");
             }}
           >
             Matches{" "}
@@ -188,7 +263,7 @@ export default function UserLayout() {
             }`}
             onClick={() => {
               setActiveTab("messages");
-              navigate("/messages");
+              setSelectedChatId(null);
             }}
           >
             Messages{" "}
@@ -238,11 +313,9 @@ export default function UserLayout() {
                 {chats.map((chat) => (
                   <li
                     key={chat.id}
-                    className={`flex items-center p-2 cursor-pointer hover:bg-gray-100 ${
-                      selectedChatId === chat.id ? "bg-yellow-100" : ""
-                    }`}
+                    className={`flex items-center p-2 cursor-pointer hover:bg-gray-100 rounded-md`}
                     onClick={() => {
-                      setSelectedChatId(chat.id); // ⬅️ Set yang aktif
+                      setSelectedChatId(chat.id);
                       if (chat.matchedUser) {
                         localStorage.setItem(
                           "matchedUser",
@@ -285,7 +358,7 @@ export default function UserLayout() {
 
       {/* Main Content */}
       <div className="flex-1 bg-gray-100 p-6 overflow-y-auto">
-        <Outlet context={{ currentUser: user }} />
+        <Outlet context={{ currentUser: user, updateChatLastMessage }} />
       </div>
 
       {/* Modal */}
@@ -314,11 +387,15 @@ export default function UserLayout() {
             </p>
             <button
               onClick={() => {
-                navigate('/messages', { state: { matchedUser: selectedMatch } });
+                navigate(`/messages/${selectedMatch.id}`, {
+                  state: { matchedUser: selectedMatch },
+                });
+                setSelectedMatch(null);
+                setActiveTab("messages");
               }}
-              className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition w-full"
+              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
             >
-              Start Chatting...
+              Send Message
             </button>
           </div>
         </div>
