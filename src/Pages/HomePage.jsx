@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Swal from "sweetalert2";
-import { Mars, Venus } from 'lucide-react';
-
+import { Mars, Venus, RotateCw } from "lucide-react";
 
 export default function HomePage() {
   const [user, setUser] = useState(null);
@@ -11,18 +11,15 @@ export default function HomePage() {
   const [matches, setMatches] = useState([]);
   const [showInfo, setShowInfo] = useState(false);
 
-
-  // Load user from localStorage
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) {
-    setUser(storedUser);
-    setPreferredGender(storedUser.preferred_gender || "");
-    setPreferredCampus(storedUser.preferred_campus || "");
+      setUser(storedUser);
+      setPreferredGender(storedUser.preferred_gender || "");
+      setPreferredCampus(storedUser.preferred_campus || "");
     }
   }, []);
 
-  // Fetch matches when user is ready
   useEffect(() => {
     if (user && user.id) {
       refreshMatches();
@@ -30,15 +27,12 @@ export default function HomePage() {
     }
   }, [user]);
 
-  // Polling setiap 5 detik untuk cek match baru
   useEffect(() => {
     if (!user || !user.id) return;
-
     const interval = setInterval(() => {
       fetchNewMatchesAndNotify();
-    }, 3000); // 5000 ms = 5 detik
-
-    return () => clearInterval(interval); // Bersihkan interval saat komponen unmount
+    }, 5000);
+    return () => clearInterval(interval);
   }, [user]);
 
   const refreshMatches = async () => {
@@ -58,7 +52,6 @@ export default function HomePage() {
       });
 
       if (!res.ok) throw new Error("Failed to fetch matches");
-
       const data = await res.json();
       setMatches(Array.isArray(data) ? data : [data]);
     } catch (err) {
@@ -67,7 +60,7 @@ export default function HomePage() {
       Swal.close();
     }
   };
-  
+
   const fetchNewMatchesAndNotify = async () => {
     try {
       const res = await fetch("http://127.0.0.1:8000/api/get-new-matches", {
@@ -77,25 +70,24 @@ export default function HomePage() {
       });
 
       if (!res.ok) throw new Error("Failed to fetch new matches");
-
       const newMatches = await res.json();
 
       if (newMatches.length > 0) {
-        // Gabungkan semua nama user yang match baru
-        const names = newMatches.map(m => m.name).join(", ");
-
+        const names = newMatches.map((m) => m.name).join(", ");
         await Swal.fire({
           title: "It's a match!",
           html: `You matched with: <b>${names}</b>`,
-          // Bisa juga tambahkan gambar salah satu match (misal match pertama)
-          imageUrl: newMatches[0].photos ? `http://127.0.0.1:8000/storage/${JSON.parse(newMatches[0].photos)[0]}` : undefined,
+          imageUrl: newMatches[0].photos
+            ? `http://127.0.0.1:8000/storage/${
+                JSON.parse(newMatches[0].photos)[0]
+              }`
+            : undefined,
           imageWidth: 300,
           imageHeight: 300,
           confirmButtonText: "Nice!",
         });
 
-        // Tandai semua match sudah diberitahu
-        const matchIds = newMatches.map(m => m.match_id);
+        const matchIds = newMatches.map((m) => m.match_id);
         await fetch("http://127.0.0.1:8000/api/mark-matches-notified", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -109,22 +101,23 @@ export default function HomePage() {
     }
   };
 
-
   const handleSavePreferences = async () => {
     if (!user) return;
-
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/preferences/${user.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          preferred_gender: preferredGender,
-          preferred_campus: preferredCampus,
-        }),
-      });
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/preferences/${user.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            preferred_gender: preferredGender,
+            preferred_campus: preferredCampus,
+          }),
+        }
+      );
 
       const result = await response.json();
 
@@ -150,7 +143,6 @@ export default function HomePage() {
     <div
       className="relative min-h-screen p-6 bg-gray-200"
       style={{
-        // backgroundImage: 'url("/homepage.png")',
         backgroundSize: "cover",
         backgroundRepeat: "repeat",
         backgroundPosition: "center",
@@ -158,7 +150,6 @@ export default function HomePage() {
     >
       <div className="absolute inset-0 bg-white/60 z-0"></div>
       <div className="relative z-10">
-        {/* Preferences Button */}
         <div className="absolute top-6 right-6 z-20">
           <button
             onClick={() => setShowPreferences(!showPreferences)}
@@ -168,11 +159,9 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Preferences Form */}
         {showPreferences && (
           <div className="absolute top-20 right-6 bg-white p-6 rounded-xl shadow-xl w-72 z-30">
             <h3 className="text-lg font-semibold mb-4">Set Preferences</h3>
-
             <label className="block mb-2 text-sm font-medium">Gender</label>
             <select
               className="w-full p-2 border rounded mb-4"
@@ -183,7 +172,6 @@ export default function HomePage() {
               <option value="male">Male</option>
               <option value="female">Female</option>
             </select>
-
             <label className="block mb-2 text-sm font-medium">Campus</label>
             <select
               className="w-full p-2 border rounded mb-4"
@@ -214,10 +202,13 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Matches Display */}
         <div className="flex flex-wrap justify-center gap-6 mt-20">
           {matches.map((matchUser) => (
-            <MatchCard key={matchUser.id} user={matchUser} onActionDone={refreshMatches} />
+            <MatchCard
+              key={matchUser.id}
+              user={matchUser}
+              onActionDone={refreshMatches}
+            />
           ))}
         </div>
       </div>
@@ -238,16 +229,16 @@ function calculateAge(birthday) {
   }
 
   return age;
-  }
+}
 
-  function InfoRow({ label, value }) {
-    return (
-      <div className="flex items-start gap-2">
-        <span className="font-semibold w-28">{label}:</span>
-        <span>{value}</span>
-      </div>
-    );
-  }
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="font-semibold w-28">{label}:</span>
+      <span>{value}</span>
+    </div>
+  );
+}
 
 function MatchCard({ user, onActionDone }) {
   const photosArray = user.photos ? JSON.parse(user.photos) : [];
@@ -300,12 +291,11 @@ function MatchCard({ user, onActionDone }) {
   const nextPhoto = () => {
     if (photoIndex < photosArray.length - 1) setPhotoIndex(photoIndex + 1);
   };
-  console.log(user); 
+
   return (
     <>
       <div className="bg-white rounded-2xl shadow-lg p-6 text-center w-80 relative">
         <div className="relative w-full h-96 mb-4 rounded-2xl overflow-hidden select-none">
-          {/* Tombol Info di kanan atas */}
           <button
             onClick={() => setShowInfo(true)}
             className="absolute top-3 right-3 z-10 bg-white/70 backdrop-blur-sm p-2 rounded-full shadow hover:bg-white"
@@ -313,50 +303,85 @@ function MatchCard({ user, onActionDone }) {
             ℹ️
           </button>
 
-          {photosArray.length > 0 ? (
-            <>
-              <img
+          <AnimatePresence mode="wait">
+            {photosArray.length > 0 ? (
+              <motion.img
+                key={photoIndex}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.4 }}
                 src={`http://127.0.0.1:8000/storage/${photosArray[photoIndex]}`}
                 alt={`Photo ${photoIndex + 1}`}
-                className="w-full h-full object-cover rounded-2xl"
+                className="w-full h-full object-cover rounded-2xl absolute inset-0"
                 draggable={false}
               />
-              {/* Tombol prev */}
-            <button
-              onClick={prevPhoto}
-              disabled={photoIndex === 0}
-              aria-label="Previous photo"
-              className={`absolute top-1/2 left-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
-                ${photoIndex === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-black/60 hover:scale-110 active:scale-95"}`}
+            ) : (
+              <img
+                src="https://via.placeholder.com/400x400?text=No+Image"
+                alt="No Image"
+                className="w-full h-full object-cover rounded-2xl"
+              />
+            )}
+          </AnimatePresence>
+
+          <button
+            onClick={prevPhoto}
+            disabled={photoIndex === 0}
+            className={`absolute top-1/2 left-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
+            ${
+              photoIndex === 0
+                ? "opacity-30 cursor-not-allowed"
+                : "hover:bg-black/60 hover:scale-110 active:scale-95"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="w-6 h-6"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            {/* Tombol next */}
-            <button
-              onClick={nextPhoto}
-              disabled={photoIndex === photosArray.length - 1}
-              aria-label="Next photo"
-              className={`absolute top-1/2 right-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
-                ${photoIndex === photosArray.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-black/60 hover:scale-110 active:scale-95"}`}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <button
+            onClick={nextPhoto}
+            disabled={photoIndex === photosArray.length - 1}
+            className={`absolute top-1/2 right-3 -translate-y-1/2 bg-black/40 text-white w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-transform
+            ${
+              photoIndex === photosArray.length - 1
+                ? "opacity-30 cursor-not-allowed"
+                : "hover:bg-black/60 hover:scale-110 active:scale-95"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className="w-6 h-6"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            </>
-          ) : (
-            <img
-              src="https://via.placeholder.com/400x400?text=No+Image"
-              alt="No Image"
-              className="w-full h-full object-cover rounded-2xl"
-            />
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
 
         <div className="flex items-center justify-center gap-2 text-xl font-semibold select-text">
-          <span>{user.name}, {calculateAge(user.birthdate)}</span>
+          <span>
+            {user.name}, {calculateAge(user.birthdate)}
+          </span>
           {user.gender === "male" && (
             <Mars className="text-blue-500 w-5 h-5" title="Male" />
           )}
@@ -364,16 +389,22 @@ function MatchCard({ user, onActionDone }) {
             <Venus className="text-pink-500 w-5 h-5" title="Female" />
           )}
         </div>
-
-
-        <p className="text-sm text-gray-500 mb-4 select-text">{user.campus}</p>
-
+        <p className="text-sm text-gray-500 mb-4 select-text">
+          {user.campus}
+        </p>
         <div className="flex justify-around mt-4">
           <button
             onClick={handleDislike}
             className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-red-100 transition"
           >
             ❌
+          </button>
+          <button
+            onClick={onActionDone}
+            className="bg-white border border-gray-300 p-3 rounded-full shadow hover:bg-yellow-100 transition"
+            title="Refresh matches"
+          >
+            <RotateCw className="text-yellow-300 w-5 h-5" strokeWidth={3} />
           </button>
           <button
             onClick={handleLike}
@@ -384,58 +415,64 @@ function MatchCard({ user, onActionDone }) {
         </div>
       </div>
 
-      {/* MODAL INFO */}
       {showInfo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative transition-all duration-300 ease-out scale-100">
-            {/* Close button */}
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
             <button
               onClick={() => setShowInfo(false)}
               className="absolute top-3 right-3 text-gray-400 hover:text-black transition"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
             </button>
-
-            {/* User photo */}
             <div className="w-full h-60 rounded-xl overflow-hidden mb-4">
               <img
-                src={user.photos ? `http://127.0.0.1:8000/storage/${JSON.parse(user.photos)[0]}` : "https://via.placeholder.com/400x400?text=No+Image"}
+                src={
+                  user.photos
+                    ? `http://127.0.0.1:8000/storage/${
+                        JSON.parse(user.photos)[0]
+                      }`
+                    : "https://via.placeholder.com/400x400?text=No+Image"
+                }
                 alt="Profile"
                 className="w-full h-full object-cover"
               />
             </div>
-
-            {/* User name + age */}
-            <h2 className="text-2xl font-bold text-center mb-1">{user.name}, {calculateAge(user.birthdate)}</h2>
-            <p className="text-center text-sm text-gray-500 mb-4 italic">{user.status}</p>
-
-            {/* Info grid */}
+            <h2 className="text-2xl font-bold text-center mb-1">
+              {user.name}, {calculateAge(user.birthdate)}
+            </h2>
+            <p className="text-center text-sm text-gray-500 mb-4 italic">
+              {user.status}
+            </p>
             <div className="space-y-2 text-sm text-gray-800">
-              <InfoRow label="📍 Campus" value={user.campus || "-"} />
+              <InfoRow label="🏫 Campus" value={user.campus || "-"} />
               <InfoRow label="🎓 Faculty" value={user.faculty || "-"} />
               <InfoRow label="📘 Major" value={user.major || "-"} />
               <InfoRow label="📝 About" value={user.description || "-"} />
               <InfoRow
                 label="⭐ Hobbies"
-                value={user.hobbies && user.hobbies.length > 0
-                  ? user.hobbies.join(", ")
-                  : "-"}
+                value={
+                  user.hobbies && user.hobbies.length > 0
+                    ? user.hobbies.join(", ")
+                    : "-"
+                }
               />
-
-              
-
-
             </div>
           </div>
         </div>
       )}
-
-
-
     </>
   );
-
 }
-

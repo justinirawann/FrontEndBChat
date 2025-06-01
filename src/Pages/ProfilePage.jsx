@@ -27,7 +27,7 @@ export default function ProfilePage() {
 
     return {
       ...userData,
-      photos: userData.photos || [],
+      photos: userData.photos || [], 
       major: storedMajor ? JSON.parse(storedMajor) : userData.major || "",
       faculty: storedFaculty ? JSON.parse(storedFaculty) : userData.faculty || "",
 
@@ -302,7 +302,7 @@ export default function ProfilePage() {
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
-            {/* <label className="block mb-2 font-medium">⭐Hobbies</label>
+            <label className="block mb-2 font-medium">⭐Hobbies</label>
             <div className="flex flex-wrap gap-1 mb-4 justify-start">
               {hobbyOptions.map((hobby) => (
                 <button
@@ -321,13 +321,12 @@ export default function ProfilePage() {
                 </button>
               ))}
             </div>
-
             <label className="block mb-2 font-medium flex items-center gap-2">
               <FaMars className="text-blue-500" />
               |
               <FaVenus className="text-pink-500" />
               Gender
-            </label> */}
+            </label> 
             <div className="flex space-x-2 mb-4">
               {["male", "female"].map((g) => (
                 <button

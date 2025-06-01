@@ -8,6 +8,7 @@ import ProfilePage from "./Pages/ProfilePage";
 import RegisterPage from "./Pages/RegisterPage";
 import UserLayout from "./layouts/UserLayout";
 import ChattingPage from "./Pages/ChattingPage";
+import MessagePage from './Pages/MessagePage';
 
 export default function AppRoutes() {
   return (
@@ -21,8 +22,8 @@ export default function AppRoutes() {
       <Route element={<UserLayout />}>
         <Route path="/home" element={<HomePage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        {/* <Route path="/matches" element={<MatchesPage />} /> */}
-        <Route path="/messages" element={<ChattingPage />} />
+        <Route path="/messages" element={<MessagePage />} />
+        <Route path="/messages/:matchedUserId" element={<ChattingPage />} />
 
       </Route>
     </Routes>

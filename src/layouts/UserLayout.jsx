@@ -14,11 +14,9 @@ export default function UserLayout() {
     photos: [],
   });
   const [matches, setMatches] = useState([]);
-  const [chats, setChats] = useState([]); // State untuk data messages/chat
-
-  // State modal untuk detail match
+  const [chats, setChats] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState(null);
-
+  const [selectedChatId, setSelectedChatId] = useState(null); // ⬅️ Tambah state ini
   const navigate = useNavigate();
 
   function getFirstPhoto(match) {
@@ -69,14 +67,60 @@ export default function UserLayout() {
       // Fetch matches
       fetch(`http://127.0.0.1:8000/api/matches?user_id=${parsedUser.id}`)
         .then((res) => res.json())
-        .then((data) => setMatches(data))
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const processedMatches = data.map((m) => ({
+              ...m,
+              photos:
+                typeof m.photos === "string"
+                  ? (() => {
+                      try {
+                        return JSON.parse(m.photos);
+                      } catch {
+                        return [];
+                      }
+                    })()
+                  : m.photos || [],
+            }));
+            setMatches(processedMatches);
+          } else {
+            setMatches([]);
+            console.warn("Matches data is not an array:", data);
+          }
+        })
         .catch((error) => console.error("Failed to fetch matches:", error));
 
-      // Fetch chats/messages
-      fetch(`http://127.0.0.1:8000/api/chats?user_id=${parsedUser.id}`)
+      // Fetch ALL chats (tidak pakai matchedUserId)
+      fetch(`http://127.0.0.1:8000/api/chat/conversations?user_id=${parsedUser.id}`)
         .then((res) => res.json())
-        .then((data) => setChats(data))
-        .catch((error) => console.error("Failed to fetch chats:", error));
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const processedChats = data.map((chat) => ({
+              ...chat,
+              matchedUser: {
+                ...chat.matchedUser,
+                photos:
+                  typeof chat.matchedUser?.photos === "string"
+                    ? (() => {
+                        try {
+                          return JSON.parse(chat.matchedUser.photos);
+                        } catch {
+                          return [];
+                        }
+                      })()
+                    : chat.matchedUser?.photos || [],
+              },
+            }));
+            setChats(processedChats);
+          } else if (data.errors) {
+            console.warn("Chats API returned errors:", data.errors);
+            setChats([]);
+          } else {
+            setChats([]);
+            console.warn("Chats data is not an array:", data);
+          }
+        })
+        .catch((error) => console.error("Failed to fetch chat conversations:", error));
     }
   }, []);
 
@@ -88,7 +132,6 @@ export default function UserLayout() {
     <div className="flex h-screen">
       {/* Sidebar */}
       <div className="w-80 bg-white shadow-lg border-r flex flex-col">
-        {/* Header */}
         <div className="bg-yellow-500 h-24 flex items-center px-4 text-white relative">
           <Link to="/profile">
             <img
@@ -127,12 +170,13 @@ export default function UserLayout() {
             }`}
             onClick={() => {
               setActiveTab("matches");
+              setSelectedChatId(null);
               navigate("/home");
             }}
           >
             Matches{" "}
             <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">
-              {matches.length}
+              {Array.isArray(matches) ? matches.length : 0}
             </span>
           </button>
 
@@ -149,15 +193,15 @@ export default function UserLayout() {
           >
             Messages{" "}
             <span className="ml-1 text-xs bg-yellow-500 text-white rounded-full px-2">
-              {chats.length}
+              {Array.isArray(chats) ? chats.length : 0}
             </span>
           </button>
         </div>
 
-        {/* Sidebar Content: Matches or Messages */}
+        {/* Sidebar Content */}
         <div className="overflow-y-auto flex-1 p-2">
-          {activeTab === "matches" && (
-            matches.length === 0 ? (
+          {activeTab === "matches" &&
+            (matches.length === 0 ? (
               <p className="text-gray-500 text-sm text-center mt-4">
                 No matches yet.
               </p>
@@ -182,49 +226,69 @@ export default function UserLayout() {
                   </div>
                 ))}
               </div>
-            )
-          )}
+            ))}
 
-          {activeTab === "messages" && (
-            chats.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center mt-4">No messages yet.</p>
+          {activeTab === "messages" &&
+            (chats.length === 0 ? (
+              <p className="text-gray-500 text-sm text-center mt-4">
+                No messages yet.
+              </p>
             ) : (
               <ul>
                 {chats.map((chat) => (
                   <li
                     key={chat.id}
-                    className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                    className={`flex items-center p-2 cursor-pointer hover:bg-gray-100 ${
+                      selectedChatId === chat.id ? "bg-yellow-100" : ""
+                    }`}
                     onClick={() => {
-                      localStorage.setItem("matchedUser", JSON.stringify(chat.matchedUser));
-                      navigate(`/messages/${chat.matchedUser.id}`);
+                      setSelectedChatId(chat.id); // ⬅️ Set yang aktif
+                      if (chat.matchedUser) {
+                        localStorage.setItem(
+                          "matchedUser",
+                          JSON.stringify(chat.matchedUser)
+                        );
+                        navigate(`/messages/${chat.matchedUser.id}`);
+                      }
                     }}
                   >
                     <img
-                      src={getPhotoUrl(chat.matchedUser.photos[0])}
+                      src={
+                        chat.matchedUser &&
+                        Array.isArray(chat.matchedUser.photos) &&
+                        chat.matchedUser.photos.length > 0
+                          ? getPhotoUrl(chat.matchedUser.photos[0])
+                          : "/default-avatar.png"
+                      }
                       alt="Avatar"
                       className="w-12 h-12 rounded-full object-cover"
                     />
                     <div className="ml-3 flex-1 border-b border-gray-200 pb-2">
                       <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-semibold">{chat.matchedUser.name}</h4>
-                        <span className="text-xs text-gray-400">{chat.lastMessageTime}</span>
+                        <h4 className="text-sm font-semibold">
+                          {chat.matchedUser?.name || "Unknown"}
+                        </h4>
+                        <span className="text-xs text-gray-400">
+                          {chat.lastMessageTime}
+                        </span>
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{chat.lastMessage || "No messages yet."}</p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {chat.lastMessage || "No messages yet."}
+                      </p>
                     </div>
                   </li>
                 ))}
               </ul>
-            )
-          )}
+            ))}
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 bg-gray-100 p-6 overflow-y-auto">
-        <Outlet />
+        <Outlet context={{ currentUser: user }} />
       </div>
 
-      {/* MODAL for Match Detail */}
+      {/* Modal */}
       {selectedMatch && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 max-w-sm w-full">
@@ -249,7 +313,9 @@ export default function UserLayout() {
               {selectedMatch.description || "No description."}
             </p>
             <button
-              onClick={() => navigate(`/chat/${selectedMatch.id}`)}
+              onClick={() => {
+                navigate('/messages', { state: { matchedUser: selectedMatch } });
+              }}
               className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600 transition w-full"
             >
               Start Chatting...
