@@ -16,12 +16,14 @@ export default function AppRoutes() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+  
       
 
       {/* Nested Route di bawah UserLayout */}
       <Route element={<UserLayout />}>
-        <Route path="/home" element={<HomePage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/home" element={<HomePage />} />
+        
         <Route path="/messages" element={<MessagePage />} />
         <Route path="/messages/:matchedUserId" element={<ChattingPage />} />
 

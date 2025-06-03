@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation, Navigate } from "react-router-dom";
 
 export default function UserLayout() {
   const [activeTab, setActiveTab] = useState(() => {
@@ -172,7 +172,7 @@ export default function UserLayout() {
       const intervalId = setInterval(() => {
         fetchMatches(parsedUser.id);
         fetchChats(parsedUser.id);
-      }, 1000);
+      }, 10000);
 
       setLoading(false);
 
@@ -187,22 +187,28 @@ export default function UserLayout() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeTab === "matches") {
+    if (location.pathname === "/profile") {
+      return;
+    }
+    if (activeTab === "matches" && location.pathname !== "/home") {
       navigate("/home");
-    } else if (activeTab === "messages") {
-      if (!location.pathname.startsWith("/messages/")) {
-        navigate("/messages");
-      }
+    } else if (
+      activeTab === "messages" &&
+      !location.pathname.startsWith("/messages")
+    ) {
+      navigate("/messages");
     }
   }, [activeTab, navigate, location.pathname]);
+
 
   if (loading) {
     return <div>Loading...</div>;
   }
 
   if (!user) {
-    return <div>User not logged in.</div>;
+    return <Navigate to="/login" replace />;
   }
+
 
   return (
     <div className="flex h-screen">
@@ -387,16 +393,19 @@ export default function UserLayout() {
             </p>
             <button
               onClick={() => {
-                navigate(`/messages/${selectedMatch.id}`, {
-                  state: { matchedUser: selectedMatch },
-                });
-                setSelectedMatch(null);
                 setActiveTab("messages");
+                setSelectedMatch(null);
+                setTimeout(() => {
+                  navigate(`/messages/${selectedMatch.id}`, {
+                    state: { matchedUser: selectedMatch },
+                  });
+                }, 0);
               }}
               className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
             >
               Send Message
             </button>
+
           </div>
         </div>
       )}

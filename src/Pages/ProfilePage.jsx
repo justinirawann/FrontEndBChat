@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom"; // ganti sesuai routing kamu
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-
   const [profile, setProfile] = useState(() => {
     const storedUser = localStorage.getItem("user");
     const storedMajor = localStorage.getItem("major");
@@ -40,7 +39,7 @@ export default function ProfilePage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchFacultiesAndMajors = async () => {
+    const fetchData = async () => {
       Swal.fire({
         title: "Loading data...",
         allowOutsideClick: false,
@@ -50,8 +49,10 @@ export default function ProfilePage() {
       });
 
       try {
-        const facultyRes = await fetch("http://127.0.0.1:8000/api/getfaculty");
-        const majorRes = await fetch("http://127.0.0.1:8000/api/getmajor");
+        const [facultyRes, majorRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/api/getfaculty"),
+          fetch("http://127.0.0.1:8000/api/getmajor"),
+        ]);
 
         const facultyData = await facultyRes.json();
         const majorData = await majorRes.json();
@@ -60,15 +61,15 @@ export default function ProfilePage() {
         setMajors(majorData);
       } catch (err) {
         console.error("Failed to fetch data", err);
-        setError("Failed to load faculty or major data.");
-        Swal.fire("Error", "Failed to load faculty or major data", "error");
+        setError("Failed to load data");
+        Swal.fire("Error", "Failed to load profile data", "error");
       } finally {
-        Swal.close(); // Tutup swal loading setelah fetch selesai
+        Swal.close();
         setLoading(false);
       }
     };
 
-    fetchFacultiesAndMajors();
+    fetchData();
   }, []);
 
   const statusColors = {
@@ -100,12 +101,6 @@ export default function ProfilePage() {
       return null;
     }
   };
-
-  const hobbyOptions = [
-    "reading", "traveling", "gaming", "cooking", "basketball", "futsal",
-    "soccer", "volleyball", "movies", "fishing", "photography", "writing",
-    "hiking", "swimming", "coding", "piano", "drum", "bass", "guitar", "music"
-  ];
 
 
   const handlePhotoChange = async (e, index) => {
@@ -146,29 +141,40 @@ export default function ProfilePage() {
     }
   }
 
-  const toggleHobby = (hobby) => {
-    setProfile((prev) => {
-      const hobbies = prev.hobbies || [];
-      if (hobbies.includes(hobby)) {
-        return { ...prev, hobbies: hobbies.filter((h) => h !== hobby) };
-      } else {
-        return { ...prev, hobbies: [...hobbies, hobby] };
-      }
-    });
-  };
+  function isProfileComplete() {
+    return (
+      profile.name?.trim() &&
+      profile.email?.trim() &&
+      profile.birthdate?.trim() &&
+      profile.gender &&
+      profile.status &&
+      profile.campus &&
+      profile.faculty_id &&
+      profile.major_id &&
+      profile.description?.trim() &&
+      (profile.photos || []).filter(Boolean).length >= 2
+    );
+  }
+
 
   const handleSave = async () => {
     if (
-      !profile.name?.trim() ||
-      !profile.birthdate?.trim() ||
-      !profile.campus?.trim()
+      !profile.name?.trim() &&
+      !profile.email?.trim() &&
+      !profile.birthdate?.trim() &&
+      !profile.gender &&
+      !profile.status &&
+      !profile.campus &&
+      !profile.faculty_id &&
+      !profile.major_id &&
+      !profile.description?.trim()
     ) {
       Swal.fire("Missing fields", "Please complete your profile", "warning");
       return;
     }
 
-    if ((profile.photos || []).filter(Boolean).length < 1) {
-      Swal.fire("Add Photos", "Please upload at least 1 profile photo", "warning");
+    if ((profile.photos || []).filter(Boolean).length < 2) {
+      Swal.fire("Add Photos", "Please upload at least 2 profile photo", "warning");
       return;
     }
 
@@ -198,7 +204,6 @@ export default function ProfilePage() {
           campus: profile.campus,
           description: profile.description,
           photos: profile.photos,
-          
         }),
       });
 
@@ -229,21 +234,6 @@ export default function ProfilePage() {
       Swal.fire("Error", "Failed to update profile", "error");
     }
   };
-
-
-  function isProfileComplete() {
-    return (
-      profile.name?.trim() &&
-      profile.email?.trim() &&
-      profile.birthdate?.trim() &&
-      profile.gender &&
-      profile.status &&
-      profile.campus &&
-      profile.faculty_id &&
-      profile.major_id &&
-      (profile.photos || []).filter(Boolean).length >= 1
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#e6efff] flex items-center justify-center px-4">
@@ -301,25 +291,7 @@ export default function ProfilePage() {
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md p-3 mb-4"
             />
-            <label className="block mb-2 font-medium">⭐Hobbies</label>
-            <div className="flex flex-wrap gap-1 mb-4 justify-start">
-              {hobbyOptions.map((hobby) => (
-                <button
-                  key={hobby}
-                  type="button"
-                  onClick={() => toggleHobby(hobby)}
-                  className={`w-24 h-8 flex items-center justify-center rounded-full border border-gray-300 text-xs capitalize shadow-sm transition-colors duration-200
-                    ${
-                      profile.hobbies?.includes(hobby)
-                        ? "bg-green-300 text-white font-semibold shadow-inner"
-                        : "bg-white text-gray-700 hover:bg-gray-200"
-                    }
-                  `}
-                >
-                  {hobby}
-                </button>
-              ))}
-            </div>
+            
             <label className="block mb-2 font-medium flex items-center gap-2">
               <FaMars className="text-blue-500" />
               |
@@ -477,7 +449,7 @@ export default function ProfilePage() {
             </div>
 
             <p className="text-gray-500 text-sm text-center">
-              Upload 1 photos to start. And add more to make your profile stand out.
+              Upload 2 photos to start. And add more to make your profile stand out.
             </p>
           </div>
         </div>

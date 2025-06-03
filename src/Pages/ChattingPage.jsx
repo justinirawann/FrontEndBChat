@@ -1,21 +1,24 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useOutletContext, useParams, useNavigate } from 'react-router-dom';
+import { FaPaperPlane } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 export default function ChattingPage() {
   const { currentUser } = useOutletContext();
-  const location = useLocation();
-  const { matchedUserId } = useParams();  // <-- ambil param matchedUserId dari URL
+  const { matchedUserId } = useParams();
   const navigate = useNavigate();
 
   const [matchedUser, setMatchedUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
-  const [chatList, setChatList] = useState([]); // untuk daftar user chat / matches
+  const [chatList, setChatList] = useState([]);
+  const [showInfo, setShowInfo] = useState(false);
+  const [zoomedPhoto, setZoomedPhoto] = useState(null); // ⬅️ Zoom modal state
+
   const messagesEndRef = useRef(null);
 
-  // Fungsi fetch data chat list (user yang pernah match/chat)
   const fetchChatList = async () => {
     if (!currentUser?.id) return;
     try {
@@ -28,7 +31,6 @@ export default function ChattingPage() {
     }
   };
 
-  // Fungsi fetch detail matched user berdasar matchedUserId param
   const fetchMatchedUserById = async (id) => {
     if (!currentUser?.id || !id) return;
     try {
@@ -42,6 +44,7 @@ export default function ChattingPage() {
       });
       if (!res.ok) throw new Error('Failed to fetch matched user');
       const data = await res.json();
+      console.log('Matched User Data:', data.matchedUser);
       setMatchedUser(data.matchedUser);
       localStorage.setItem('matchedUser', JSON.stringify(data.matchedUser));
     } catch (error) {
@@ -51,24 +54,19 @@ export default function ChattingPage() {
     }
   };
 
-  // Ambil matchedUser berdasarkan param matchedUserId
   useEffect(() => {
     if (matchedUserId) {
       fetchMatchedUserById(matchedUserId);
     } else {
-      // Kalau gak ada param, hapus matchedUser biar gak tampil chat room
       setMatchedUser(null);
-      // Dan fetch chat list (list orang yg bisa diajak chat)
       fetchChatList();
     }
   }, [matchedUserId, currentUser]);
 
-  // Scroll to bottom tiap ada pesan baru
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Fetch pesan chat antara currentUser dan matchedUser
   const fetchMessages = async () => {
     if (!currentUser?.id || !matchedUser?.id) return;
     try {
@@ -83,7 +81,6 @@ export default function ChattingPage() {
     }
   };
 
-  // Fetch messages dan update berkala setiap 5 detik
   useEffect(() => {
     if (matchedUser) {
       fetchMessages();
@@ -92,14 +89,36 @@ export default function ChattingPage() {
     }
   }, [matchedUser]);
 
-  // Kirim pesan baru
+  const photosArray = Array.isArray(matchedUser?.photos)
+    ? matchedUser.photos
+    : matchedUser?.photos
+    ? JSON.parse(matchedUser.photos)
+    : [];
+
+  function calculateAge(birthday) {
+    if (!birthday) return null;
+    const birthDate = new Date(birthday);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  }
+
+  function InfoRow({ label, value }) {
+    return (
+      <div className="flex items-start gap-2">
+        <span className="font-semibold w-28">{label}:</span>
+        <span>{value}</span>
+      </div>
+    );
+  }
+
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
-
-    if (!currentUser?.id || !matchedUser?.id) {
-      alert('User information is missing!');
-      return;
-    }
+    if (!currentUser?.id || !matchedUser?.id) return alert('User missing');
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/chat/send`, {
@@ -111,7 +130,6 @@ export default function ChattingPage() {
           message: newMessage.trim(),
         }),
       });
-
       if (!res.ok) throw new Error('Failed to send message');
 
       setNewMessage('');
@@ -121,31 +139,19 @@ export default function ChattingPage() {
     }
   };
 
-  if (!currentUser) {
-    return <p>Loading user information...</p>;
-  }
+  if (!currentUser) return <p className="text-center mt-10">Loading user info...</p>;
 
-  // Kalau matchedUserId gak ada, berarti tampilkan list chat
   if (!matchedUserId) {
     return (
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
-        <h2>Your Chats</h2>
-        {chatList.length === 0 && <p>You have no chats yet.</p>}
+      <div className="w-full max-w-2xl mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold mb-4">Your Chats</h2>
+        {chatList.length === 0 && <p className="text-gray-500">You have no chats yet.</p>}
         <ul>
           {chatList.map((chat) => (
             <li
               key={chat.id}
-              onClick={() => {
-                // Navigate ke route /messages/:matchedUserId supaya chat room muncul
-                navigate(`/messages/${chat.matchedUser.id}`);
-              }}
-              style={{
-                cursor: 'pointer',
-                padding: '10px',
-                borderBottom: '1px solid #ccc',
-                display: 'flex',
-                alignItems: 'center',
-              }}
+              onClick={() => navigate(`/messages/${chat.matchedUser.id}`)}
+              className="flex items-center gap-4 p-3 border-b border-gray-200 cursor-pointer hover:bg-gray-100 rounded-lg"
             >
               <img
                 src={
@@ -154,13 +160,13 @@ export default function ChattingPage() {
                     : '/default-avatar.png'
                 }
                 alt={chat.matchedUser.name}
-                style={{ width: 40, height: 40, borderRadius: '50%', marginRight: 10 }}
+                className="w-12 h-12 rounded-full object-cover"
               />
               <div>
-                <div style={{ fontWeight: 'bold' }}>{chat.matchedUser.name}</div>
-                <div style={{ fontSize: 12, color: '#666' }}>
+                <p className="font-semibold">{chat.matchedUser.name}</p>
+                <p className="text-sm text-gray-500">
                   {chat.lastMessage || 'No messages yet.'}
-                </div>
+                </p>
               </div>
             </li>
           ))}
@@ -169,84 +175,143 @@ export default function ChattingPage() {
     );
   }
 
-  // Kalau matchedUserId ada dan matchedUser sudah valid, tampilkan chat room
-  if (!matchedUser) {
-    return <p>Loading chat room...</p>;
-  }
+  if (!matchedUser) return <p className="text-center mt-10">Loading chat room...</p>;
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
-      <h2>Chat with {matchedUser.name}</h2>
-
+    <div className="w-full h-screen flex flex-col px-4 py-6">
       <div
-        style={{
-          border: '1px solid #ccc',
-          borderRadius: 8,
-          padding: 10,
-          height: 400,
-          overflowY: 'auto',
-          marginBottom: 20,
-          background: '#f9f9f9',
-        }}
+        onClick={() => setShowInfo(true)}
+        className="flex items-center space-x-4 mb-4 p-4 rounded-xl bg-white shadow-md cursor-pointer hover:bg-gray-50"
       >
-        {messages.length === 0 && <p>No messages yet. Say hi!</p>}
+        <img
+          src={
+            photosArray.length > 0
+              ? `http://127.0.0.1:8000/storage/${photosArray[0]}`
+              : '/default-avatar.png'
+          }
+          alt="Profile"
+          className="w-12 h-12 rounded-full object-cover"
+        />
+        <div>
+          <h2 className="text-lg font-semibold">{matchedUser.name}</h2>
+          <p className="text-sm text-gray-500">You're now connected 💬</p>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto bg-gray-100 rounded-xl p-4 space-y-2">
+        {messages.length === 0 && (
+          <p className="text-center text-gray-500">No messages yet. Say hi!</p>
+        )}
 
         {messages.map((msg) => (
           <div
             key={msg.id}
-            style={{
-              display: 'flex',
-              justifyContent: msg.sender_id === currentUser.id ? 'flex-end' : 'flex-start',
-              marginBottom: 8,
-            }}
+            className={`flex ${msg.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              style={{
-                backgroundColor: msg.sender_id === currentUser.id ? '#4caf50' : '#e0e0e0',
-                color: msg.sender_id === currentUser.id ? 'white' : 'black',
-                padding: '8px 12px',
-                borderRadius: 20,
-                maxWidth: '70%',
-                wordBreak: 'break-word',
-              }}
+              className={`rounded-2xl px-4 py-2 max-w-xs break-words text-sm shadow-sm
+                ${msg.sender_id === currentUser.id ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-800'}`}
             >
               {msg.message}
-              <div style={{ fontSize: 10, marginTop: 4, opacity: 0.7, textAlign: 'right' }}>
+              <div className="text-[10px] text-right text-gray-400 mt-1">
                 {new Date(msg.created_at).toLocaleTimeString()}
               </div>
             </div>
           </div>
         ))}
-
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{ display: 'flex' }}>
+      <div className="mt-4 flex items-center gap-2">
         <input
           type="text"
           placeholder="Type your message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSendMessage();
-          }}
-          style={{ flex: 1, padding: 10, borderRadius: 20, border: '1px solid #ccc' }}
+          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+          className="flex-1 px-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
         />
-        <button
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
           onClick={handleSendMessage}
-          style={{
-            marginLeft: 10,
-            padding: '10px 20px',
-            borderRadius: 20,
-            backgroundColor: '#4caf50',
-            color: 'white',
-            border: 'none',
-            cursor: 'pointer',
-          }}
+          className="p-3 rounded-full bg-green-500 text-white hover:bg-green-600 focus:outline-none"
         >
-          Send
-        </button>
+          <FaPaperPlane size={16} />
+        </motion.button>
       </div>
+
+      {showInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-96 relative">
+            <button
+              onClick={() => setShowInfo(false)}
+              className="absolute top-2 right-3 text-gray-500 hover:text-black text-xl"
+            >
+              &times;
+            </button>
+
+            {/* Galeri foto */}
+            <div className="flex gap-2 overflow-x-auto mb-4">
+              {photosArray.length > 0 ? (
+                photosArray.map((photo, index) => (
+                  <img
+                    key={index}
+                    src={`http://127.0.0.1:8000/storage/${photo}`}
+                    alt={`Photo ${index + 1}`}
+                    className="w-24 h-24 object-cover rounded-xl cursor-pointer"
+                    onClick={() =>{
+                      setShowInfo(false);
+                      setZoomedPhoto(`http://127.0.0.1:8000/storage/${photo}`)
+                    }}
+                  />
+                ))
+              ) : (
+                <img
+                  src="/default-avatar.png"
+                  alt="Default"
+                  className="w-24 h-24 object-cover rounded-xl mx-auto"
+                />
+              )}
+            </div>
+
+            <h3 className="text-xl font-semibold text-center">{matchedUser.name}</h3>
+            <p className="text-sm text-center text-gray-600 mb-2">{matchedUser.campus}</p>
+
+            <div className="text-sm text-gray-700 space-y-1">
+              <InfoRow label="🎂 Age" value={calculateAge(matchedUser.birthdate) || "-"} />
+              <InfoRow label="🎓 Faculty" value={matchedUser.faculty?.name || "-"} />
+              <InfoRow label="📘 Major" value={matchedUser.major?.name || "-"} />
+              <InfoRow label="📝 Bio" value={matchedUser.description || "No bio provided."} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zoom Modal */}
+      {zoomedPhoto && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex justify-center items-center overflow-y-auto">
+          {/* Close button tetap di atas layar */}
+          <button
+            onClick={() => {
+              setZoomedPhoto(null);
+              setShowInfo(true);
+            }}
+            className="fixed top-4 right-6 text-white text-4xl font-bold z-[61] hover:text-red-400"
+          >
+            &times;
+          </button>
+
+          <div className="max-w-3xl w-full px-4 py-10 flex justify-center items-center">
+            <img
+              src={zoomedPhoto}
+              alt="Zoomed"
+              className="w-auto max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
